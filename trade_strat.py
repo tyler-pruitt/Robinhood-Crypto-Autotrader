@@ -5,7 +5,7 @@ import robin_stocks.robinhood as rh
 import robin_stocks.helper as helper
 import robin_stocks.urls as urls
 
-class trader():
+class Trader():
     def __init__(self, stocks):
         self.stocks = stocks
 
@@ -33,7 +33,6 @@ class trader():
         # for item in data:
         #     for subitem in item['historicals']:
         #         historical_data.append(subitem)
-        #historical_data = rh.stocks.get_stock_historicals(stock, interval=interval, span=span, bounds='extended')
         historical_data = rh.crypto.get_crypto_historicals(stock, interval=interval, span=span, bounds='24_7')
 
         df = pd.DataFrame(historical_data)

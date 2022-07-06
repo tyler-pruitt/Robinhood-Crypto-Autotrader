@@ -55,8 +55,8 @@ def reauth(f):
     return function_reauth
 
 
-class RobinhoodCrypto:
-    # Addded 'SHIB' to PAIRS
+class RobinhoodCrypto():
+    # Implemented all tradable cryptos into PAIRS
     PAIRS = {
         'BTC': '3d961844-d360-45fc-989b-f6fca761d511',
         'ETH': '76637d50-c702-4ed1-bcb5-5b0732a81f48',
@@ -65,7 +65,11 @@ class RobinhoodCrypto:
         'BSV': '086a8f9f-6c39-43fa-ac9f-57952f4a1ba6',
         'LTC': '383280b1-ff53-43fc-9c84-f01afd0989cd',
         'DOGE': '1ef78e1b-049b-4f12-90e5-555dcf2fe204',
-        'SHIB': '2d189ddb-bc0d-4aa4-bd6b-cd72e6679cd0'
+        'SHIB': '2d189ddb-bc0d-4aa4-bd6b-cd72e6679cd0',
+        'SOL': '0cdc8c93-fbda-462f-94b7-26353d87a009',
+        'MATIC': 'b668301c-44f9-4fbf-88e4-8140846f15ba',
+        'COMP': '715af4b3-26d0-4cd0-ad07-7a1cf5dc734a',
+        'LINK': '9f0a3a2e-e72e-4361-bf15-91d962487922'
     }
 
     ENDPOINTS = {
@@ -156,10 +160,12 @@ class RobinhoodCrypto:
                 id += "-"
         return id
 
-    # Autheticate user with username/password.
-    # Returns: access_token for API auth.
-    # Throw exception if it fails.
     def get_access_token(self, username, password, mfa_code=None):
+        """
+        Autheticate user with username/password.
+        Returns: access_token for API auth.
+        Throw exception if it fails.
+        """
         auth_session = requests.session()
         auth_session.headers = self.construct_auth_header()
         if not self.device_token:
@@ -189,9 +195,14 @@ class RobinhoodCrypto:
             raise LoginException()
         return access_token
 
-    # Return: dict
-    # {'ask_price': '8836.3300', 'bid_price': '8801.0500', 'mark_price': '8818.6900', 'high_price': '9064.6400', 'low_price': '8779.9599', 'open_price': '8847.2400', 'symbol': 'BTCUSD', 'id': '3d961844-d360-45fc-989b-f6fca761d511', 'volume': '380373.1898'}
     def quotes(self, pair='BTC'):
+        """
+        Return: dict
+        {'ask_price': '8836.3300', 'bid_price': '8801.0500', 'mark_price': '8818.6900', 
+         'high_price': '9064.6400', 'low_price': '8779.9599', 'open_price': '8847.2400',
+         'symbol': 'BTCUSD', 'id': '3d961844-d360-45fc-989b-f6fca761d511',
+         'volume': '380373.1898'}
+        """
         symbol = RobinhoodCrypto.PAIRS[pair]
         assert symbol, 'unknown pair {}'.format(pair)
         url = RobinhoodCrypto.ENDPOINTS['quotes'].format(symbol)
@@ -230,28 +241,28 @@ class RobinhoodCrypto:
             LOG.error('account cannot be retrieved')
             raise AccountNotFoundException()
         return None
-
-    # return:
-    # dict in format
-    # {
-    #     "account_id":"abcd",
-    #     "cancel_url":"https://nummus.robinhood.com/orders/{order_id}/cancel/",
-    #     "created_at":"2018-04-22T14:07:37.103809-04:00",
-    #     "cumulative_quantity":"0.000000000000000000",
-    #     "currency_pair_id":"3d961844-d360-45fc-989b-f6fca761d511",
-    #     "executions":[],
-    #     "id":"efgh",
-    #     "last_transaction_at":null,
-    #     "price":"9028.670000000000000000",
-    #     "quantity":"0.000111860000000000",
-    #     "ref_id":"ijk",
-    #     "side":"buy",
-    #     "state":"unconfirmed",
-    #     "time_in_force":"gtc",
-    #     "type":"market",
-    #     "updated_at":"2018-04-22T14:07:37.250180-04:00"
-    # }
+    
     def trade(self, pair, **kwargs):
+        """
+        Return:
+            dict in format
+        {"account_id":"abcd",
+         "cancel_url":"https://nummus.robinhood.com/orders/{order_id}/cancel/",
+         "created_at":"2018-04-22T14:07:37.103809-04:00",
+         "cumulative_quantity":"0.000000000000000000",
+         "currency_pair_id":"3d961844-d360-45fc-989b-f6fca761d511",
+         "executions":[],
+         "id":"efgh",
+         "last_transaction_at":null,
+         "price":"9028.670000000000000000",
+         "quantity":"0.000111860000000000",
+         "ref_id":"ijk",
+         "side":"buy",
+         "state":"unconfirmed",
+         "time_in_force":"gtc",
+         "type":"market",
+         "updated_at":"2018-04-22T14:07:37.250180-04:00"}
+        """
         assert pair in RobinhoodCrypto.PAIRS.keys(), 'pair {} is not in {}.'.format(pair, RobinhoodCrypto.PAIRS.keys())
         set(kwargs.keys()) == ['price', 'quantity', 'side', 'time_in_force', 'type']
         payload = {
@@ -296,11 +307,11 @@ class RobinhoodCrypto:
             raise e
         return res
     
-    """
-    Returns: list of prices
-    """
     def get_latest_price(self, stocks):
-        # NEW
+        """
+        Returns: list of prices
+        """
+        
         prices = []
         
         for i in range(len(stocks)):
@@ -308,15 +319,14 @@ class RobinhoodCrypto:
         
         return prices
 
-    """
-    Return { 'data_points': [{ 'begins_at': '2018-05-07T00:20:00Z', 'open_price': '9636.2650', 'close_price': '9598.4300', 'high_price': '9638.0600', 'low_price': '9594.3700', 'volume': '0.0000', 'session': 'reg', 'interpolated': False }], 'bounds': '24_7', 'interval': '5minute', 'span': 'day', 'symbol': 'BTCUSD', 'id': '3d961844-d360-45fc-989b-f6fca761d511', 'open_price': None, 'open_time': None, 'previous_close_price': None, 'previous_close_time': None }
-    :param pair: BTCUSD,ETHUSD
-    :param interval: optional 15second,5minute,10minute,hour,day,week
-    :param span: optional hour,day,year,5year,all
-    :param bounds: 24_7,regular,extended,trading
-
-    """
     def historicals(self, pair='BTC', interval='5minute', span='day',  bounds='24_7'):
+        """
+        Return { 'data_points': [{ 'begins_at': '2018-05-07T00:20:00Z', 'open_price': '9636.2650', 'close_price': '9598.4300', 'high_price': '9638.0600', 'low_price': '9594.3700', 'volume': '0.0000', 'session': 'reg', 'interpolated': False }], 'bounds': '24_7', 'interval': '5minute', 'span': 'day', 'symbol': 'BTCUSD', 'id': '3d961844-d360-45fc-989b-f6fca761d511', 'open_price': None, 'open_time': None, 'previous_close_price': None, 'previous_close_time': None }
+        :param pair: BTC,ETH
+        :param interval: optional 15second,5minute,10minute,hour,day,week
+        :param span: optional hour,day,year,5year,all
+        :param bounds: 24_7,regular,extended,trading
+        """
         symbol = RobinhoodCrypto.PAIRS[pair]
         assert symbol, 'unknown pair {}'.format(pair)
         url = RobinhoodCrypto.ENDPOINTS['historicals'].format(symbol, interval, span, bounds)
@@ -326,34 +336,34 @@ class RobinhoodCrypto:
             raise e
         return res
 
-    """
-    Returns [{
-        "account_id": "fad55b1b-1142-4c84-8bb3-1e65edfa37d4",
-        "cost_bases": [{
-            "currency_id": "1072fc76-1862-41ab-82c2-485837590762",
-            "direct_cost_basis": "0.000000000000000000",
-            "direct_quantity": "0.000000000000000000",
-            "id": "7d9b074c-e87e-46de-8654-0e1ef9c30459",
-            "marked_cost_basis": "0.000000000000000000",
-            "marked_quantity": "0.000000000000000000"
-        }],
-        "created_at": "2018-05-08T19:23:52.094139-04:00",
-        "currency": {
-            "code": "BTC",
-            "id": "d674efea-e623-4396-9026-39574b92b093",
-            "increment": "0.000000010000000000",
-            "name": "Bitcoin",
-            "type": "cryptocurrency"
-        },
-        "id": "76cc6887-75ee-4d6b-ad46-01a12904fb89",
-        "quantity": "0.000000000000000000",
-        "quantity_available": "0.000000000000000000",
-        "quantity_held_for_buy": "0.000000000000000000",
-        "quantity_held_for_sell": "0.000000000000000000",
-        "updated_at": "2018-05-10T07:07:36.091597-04:00"
-    }]
-    """
     def holdings(self):
+        """
+        Returns [{
+            "account_id": "fad55b1b-1142-4c84-8bb3-1e65edfa37d4",
+            "cost_bases": [{
+                "currency_id": "1072fc76-1862-41ab-82c2-485837590762",
+                "direct_cost_basis": "0.000000000000000000",
+                "direct_quantity": "0.000000000000000000",
+                "id": "7d9b074c-e87e-46de-8654-0e1ef9c30459",
+                "marked_cost_basis": "0.000000000000000000",
+                "marked_quantity": "0.000000000000000000"
+            }],
+            "created_at": "2018-05-08T19:23:52.094139-04:00",
+            "currency": {
+                "code": "BTC",
+                "id": "d674efea-e623-4396-9026-39574b92b093",
+                "increment": "0.000000010000000000",
+                "name": "Bitcoin",
+                "type": "cryptocurrency"
+            },
+            "id": "76cc6887-75ee-4d6b-ad46-01a12904fb89",
+            "quantity": "0.000000000000000000",
+            "quantity_available": "0.000000000000000000",
+            "quantity_held_for_buy": "0.000000000000000000",
+            "quantity_held_for_sell": "0.000000000000000000",
+            "updated_at": "2018-05-10T07:07:36.091597-04:00"
+        }]
+        """
         try:
             res = self.session_request(RobinhoodCrypto.ENDPOINTS['holdings'], method='get', timeout=5)
         except Exception as e:
@@ -364,7 +374,19 @@ class RobinhoodCrypto:
         return []
     
     def build_holdings(self):
-        # NEW
+        """
+        Returns {
+            'stock1': {
+                'price': '76.24',
+                'quantity': '2.00',
+                'average_buy_price': '79.26',
+                },
+            'stock2': {
+                'price': '76.24',
+                'quantity': '2.00',
+                'average_buy_price': '79.26',
+                }}
+        """
         holdings_data = self.holdings()
         
         build_holdings_data = dict()
@@ -374,35 +396,38 @@ class RobinhoodCrypto:
             
             nested_data['price'] = self.get_latest_price([holdings_data[i]["currency"]["code"]])
             nested_data['quantity'] = holdings_data[i]["quantity"]
-            nested_data['average_buy_price'] = str(float(holdings_data[i]["cost_bases"][0]["direct_cost_basis"]) / float(nested_data["quantity"]))
+            try:
+                nested_data['average_buy_price'] = str(float(holdings_data[i]["cost_bases"][0]["direct_cost_basis"]) / float(nested_data["quantity"]))
+            except ZeroDivisionError:
+                nested_data['average_buy_price'] = '-'
             
             build_holdings_data[holdings_data[i]["currency"]["code"]] = nested_data
         
         return build_holdings_data
 
-    """
-    Returns {
-        'unwithdrawable_grants': '0.0000',
-        'account': 'https://api.robinhood.com/accounts/5Q3S4FCX/',
-        'excess_maintenance_with_uncleared_deposits': '0.0000',
-        'url': 'https://api.robinhood.com/portfolios/5QW64535/',
-        'excess_maintenance': '0.0000',
-        'market_value': '0.0000',
-        'withdrawable_amount': '0.0000',
-        'last_core_market_value': '0.0000',
-        'unwithdrawable_deposits': '0.0000',
-        'extended_hours_equity': '0.0000',
-        'excess_margin': '197.0700',
-        'excess_margin_with_uncleared_deposits': '0.0000',
-        'equity': '0.0000',
-        'last_core_equity': '0.0000',
-        'adjusted_equity_previous_close': '0.0000',
-        'equity_previous_close': '-0.0000',
-        'start_date': '2016-03-14',
-        'extended_hours_market_value': '0.0000'
-    }
-    """
     def portfolios(self):
+        """
+        Returns {
+            'unwithdrawable_grants': '0.0000',
+            'account': 'https://api.robinhood.com/accounts/5Q3S4FCX/',
+            'excess_maintenance_with_uncleared_deposits': '0.0000',
+            'url': 'https://api.robinhood.com/portfolios/5QW64535/',
+            'excess_maintenance': '0.0000',
+            'market_value': '0.0000',
+            'withdrawable_amount': '0.0000',
+            'last_core_market_value': '0.0000',
+            'unwithdrawable_deposits': '0.0000',
+            'extended_hours_equity': '0.0000',
+            'excess_margin': '197.0700',
+            'excess_margin_with_uncleared_deposits': '0.0000',
+            'equity': '0.0000',
+            'last_core_equity': '0.0000',
+            'adjusted_equity_previous_close': '0.0000',
+            'equity_previous_close': '-0.0000',
+            'start_date': '2016-03-14',
+            'extended_hours_market_value': '0.0000'
+        }
+        """
         url = RobinhoodCrypto.ENDPOINTS['portfolios'].format(self._account_number)
         try:
             res = self.session_request(url, method='get')

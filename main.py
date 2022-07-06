@@ -21,10 +21,6 @@ def login(days):
 def logout():
     rh.authentication.logout()
 
-def get_stocks():
-    # add your stocks here
-    return ["DOGE", "SHIB"]
-
 def open_market():
     """
     market = False
@@ -53,7 +49,7 @@ def get_cash():
 def get_holdings_and_bought_price(rhcrypto, stocks):
     holdings = {stocks[i]: 0 for i in range(0, len(stocks))}
     bought_price = {stocks[i]: 0 for i in range(0, len(stocks))}
-    #rh_holdings = rh.account.build_holdings()
+    
     rh_holdings = rhcrypto.build_holdings()
 
     for stock in stocks:
@@ -75,7 +71,7 @@ def sell(stock, holdings, price):
     #                                         limitPrice=sell_price,
     #                                         timeInForce='gfd')
 
-    print('### Trying to SELL {} at ${}'.format(stock, price))
+    print('### Trying to SELL {} amount of {} at ${}'.format(holdings, stock, price))
 
 def buy(stock, allowable_holdings):
     buy_price = round((price+0.10), 2)
@@ -86,7 +82,7 @@ def buy(stock, allowable_holdings):
     #                                       limitPrice=buy_price,
     #                                       timeInForce='gfd')
 
-    print('### Trying to BUY {} at ${}'.format(stock, price))
+    print('### Trying to BUY {} of {} at ${}'.format(allowable_holdings, stock, price))
 
 def build_dataframes(df_trades, trade_dict, df_prices, price_dict):
     time_now = str(dt.datetime.now().time())[:8]
@@ -98,46 +94,61 @@ if __name__ == "__main__":
     login(days=1)
     rhcrypto = RobinhoodCrypto(config.USERNAME, config.PASSWORD)
     
-    stocks = get_stocks()
+    stocks = config.STOCKS
+    
     print('stocks:', stocks)
+    
     cash, equity = get_cash()
 
-    ts = trade_strat.trader(stocks)
+    ts = trade_strat.Trader(stocks)
 
     trade_dict = {stocks[i]: 0 for i in range(0, len(stocks))}
     price_dict = {stocks[i]: 0 for i in range(0, len(stocks))}
+    
     df_trades = pd.DataFrame(columns=stocks)
     df_prices = pd.DataFrame(columns=stocks)
 
     while open_market():
-        #prices = rh.stocks.get_latest_price(stocks)
         prices = rhcrypto.get_latest_price(stocks)
+        
         holdings, bought_price = get_holdings_and_bought_price(rhcrypto, stocks)
+        
         print("===================================")
         print('holdings:', holdings)
 
         for i, stock in enumerate(stocks):
             price = float(prices[i])
+            
             print('{} = ${}'.format(stock, price))
 
             trade = ts.trade_option(rhcrypto, stock, price)
+            
             print('trade:', trade, end='\n\n')
+            
             if trade == "BUY":
-                allowable_holdings = int((cash/10)/price)
-                if allowable_holdings > 5 and holdings[stock] == 0:
+                allowable_holdings = (cash / 10) / price
+                
+                if allowable_holdings > 0.0 and holdings[stock] == 0:
                     buy(stock, allowable_holdings)
+                else:
+                    print("Not enough allowable holdings")
             elif trade == "SELL":
-                if holdings[stock] > 0:
+                if holdings[stock] > 0.0:
                     sell(stock, holdings[stock], price)
+                else:
+                    print("Not enough holdings")
 
             price_dict[stock] = price
+            
             if holdings[stock] > 0 and trade != "SELL":
                 trade = "HOLD"
             elif holdings[stock] == 0 and trade != "BUY":
                 trade = "WAIT"
+            
             trade_dict[stock] = trade
 
         df_trades, df_prices = build_dataframes(df_trades, trade_dict, df_prices, price_dict)
+        
         grapher.active_graph(grapher.normalize(df_prices), df_trades)
 
         time.sleep(30)

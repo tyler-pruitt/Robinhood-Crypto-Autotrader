@@ -1,2 +1,4 @@
-#USERNAME = "Your_username"
-#PASSWORD = "Your_password"
+USERNAME = "Your_username"
+PASSWORD = "Your_password"
+
+STOCKS = ['BTC']
