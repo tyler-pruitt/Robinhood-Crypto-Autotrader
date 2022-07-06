@@ -24,4 +24,9 @@ Due to users receiving a 404 Error from trade_strat.py in the get_historical_pri
 updated files:
      - trader.py
      - trade_strat.py
-     
+
+-- UPDATE: 07/04/2021 --
+Trading ideas:
+- Linear regression, least squares, R^2
+- Polynomial and exponential regression
+- Machine learning
