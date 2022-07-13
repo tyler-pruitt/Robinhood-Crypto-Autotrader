@@ -1,4 +1,7 @@
 # Create your own personal trading strategy to trade with
+import numpy as np
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
 import pandas as pd
 
 import robin_stocks.robinhood as rh
@@ -11,7 +14,11 @@ class Trader():
 
         self.sma_hour = {stocks[i]: 0 for i in range(0, len(stocks))}
         self.run_time = 0
-        self.buffer = 0.002 #0.2%
+        
+        # On Robinhood market orders are adjusted to limit orders collared up to 1% for buys, and 5% for sells.
+        # https://robinhood.com/us/en/support/articles/why-is-the-price-displayed-on-the-crypto-detail-pages-different-from-the-final-buy-and-sell-price-on-the-order-page/
+        self.sellBuffer = 0.05
+        self.buyBuffer = 0.01
 
         self.price_sma_hour = {stocks[i]: 0 for i in range(0, len(stocks))}
 
@@ -54,6 +61,11 @@ class Trader():
     def get_price_sma(self, price, sma):
         price_sma = round(price/sma, 8)
         return(price_sma)
+    
+    def polynomial_fit(self, stock, df_prices, window):
+        # STILL NEED TO IMPLEMENT
+        y = df_prices.rolling(window=window, min_periods=window)
+        x = list(range(0, window))
 
     def trade_option(self, rhcrypto, stock, price):
         # gets new sma_hour every 5min
@@ -64,9 +76,9 @@ class Trader():
         self.price_sma_hour[stock] = self.get_price_sma(price, self.sma_hour[stock])
         p_sma = self.price_sma_hour[stock]
         
-        if self.price_sma_hour[stock] < 1.0 - self.buffer:
+        if self.price_sma_hour[stock] < 1.0 - self.buyBuffer:
             i1 = "BUY"
-        elif self.price_sma_hour[stock] > 1.0 + self.buffer:
+        elif self.price_sma_hour[stock] > 1.0 + self.sellBuffer:
             i1 = "SELL"
         else:
             i1 = "NONE"

@@ -62,27 +62,55 @@ def get_holdings_and_bought_price(rhcrypto, stocks):
 
     return(holdings, bought_price)
 
-def sell(stock, holdings, price):
-    sell_price = round((price-0.10), 2)
+def sell(rhcrypto, stock, holdings, price):
+    # sell_price = round(price - 0.10, 2)
     # un-comment when ready to trade on the live market
+    
     print('sell is currently commented')
+    
     # sell_order = rh.orders.order_sell_limit(symbol=stock,
     #                                         quantity=holdings,
     #                                         limitPrice=sell_price,
     #                                         timeInForce='gfd')
+    """
+    sell_order_info = rhcrypto.trade(
+        pair=stock,
+        price=round(price, 2),
+        quantity="holdings",
+        side="buy",
+        time_in_force="gtc",
+        type="limit"
+    )
+    """
 
     print('### Trying to SELL {} amount of {} at ${}'.format(holdings, stock, price))
+    
+    #return sell_order_info
 
-def buy(stock, allowable_holdings):
-    buy_price = round((price+0.10), 2)
+def buy(rhcrypto, stock, allowable_holdings, price):
+    # buy_price = round((price + 0.10), 2)
     # un-comment when ready to trade on the live market
+    
     print('buy is currently commented')
+    
     # buy_order = rh.orders.order_buy_limit(symbol=stock,
     #                                       quantity=allowable_holdings,
     #                                       limitPrice=buy_price,
     #                                       timeInForce='gfd')
+    """
+    buy_order_info = rhcrypto.trade(
+        pair=stock,
+        price=round(price, 2),
+        quantity=allowable_holdings,
+        side="sell",
+        time_in_force="gtc",
+        type="limit"
+    )
+    """
 
     print('### Trying to BUY {} of {} at ${}'.format(allowable_holdings, stock, price))
+
+    #return buy_order_info
 
 def build_dataframes(df_trades, trade_dict, df_prices, price_dict):
     time_now = str(dt.datetime.now().time())[:8]
@@ -94,7 +122,7 @@ if __name__ == "__main__":
     login(days=1)
     rhcrypto = RobinhoodCrypto(config.USERNAME, config.PASSWORD)
     
-    stocks = config.STOCKS
+    stocks = config.CRYPTO
     
     print('stocks:', stocks)
     
@@ -129,7 +157,7 @@ if __name__ == "__main__":
                 allowable_holdings = (cash / 10) / price
                 
                 if allowable_holdings > 0.0 and holdings[stock] == 0:
-                    buy(stock, allowable_holdings)
+                    buy(stock, allowable_holdings, price)
                 else:
                     print("Not enough allowable holdings")
             elif trade == "SELL":
