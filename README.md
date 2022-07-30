@@ -13,8 +13,12 @@ updated files:
      - trader.py
      - trade_strat.py
 
--- UPDATE: 07/04/2021 --
+-- UPDATE: 07/04/2022 --
 Trading ideas:
 - Linear regression, least squares, R^2
 - Polynomial and exponential regression
 - Machine learning
+
+-- UPDATE: 07/29/2022 --
+- Implemented polynomial regression
+- Fixed Trader class runtime implementation
