@@ -162,7 +162,7 @@ if __name__ == "__main__":
         
         holdings, bought_price = get_holdings_and_bought_price(rhcrypto, stocks)
         
-        print("===================================")
+        print("==========================================")
         print("runtime: " + display_time(ts.get_runtime()))
         print('crypto holdings:', holdings)
 

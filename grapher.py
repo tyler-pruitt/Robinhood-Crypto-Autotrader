@@ -24,9 +24,9 @@ def active_graph(df, df_trades, pause=1):
     plt.ylabel('Normalized Price')
 
     for stock in df_trades.columns.values.tolist():
-        if df_trades[stock].iloc[-1] == 'HOLD' or df_trades[stock].iloc[-1] == 'BUY':
+        if df_trades[stock].iloc[-1] == 'UNABLE TO BUY' or df_trades[stock].iloc[-1] == 'BUY':
             plt.plot(df[stock], alpha=1.0)
-        elif df_trades[stock].iloc[-1] == 'WAIT' or df_trades[stock].iloc[-1] == 'SELL':
+        elif df_trades[stock].iloc[-1] == 'UNABLE TO SELL' or df_trades[stock].iloc[-1] == 'SELL':
             plt.plot(df[stock], alpha=0.2)
 
         for day, order in df_trades.iterrows():

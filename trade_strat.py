@@ -1,4 +1,3 @@
-import config
 import grapher
 
 import numpy as np
@@ -17,21 +16,60 @@ class Trader():
         self.sma_hour = {stocks[i]: 0 for i in range(0, len(stocks))}
         
         self.start_time = time.time()
-        self.previous_time = time.time()
+        self.previous_time = [time.time()] * len(self.stocks)
         
         # On Robinhood market orders are adjusted to limit orders collared up to 1% for buys, and 5% for sells.
         # https://robinhood.com/us/en/support/articles/why-is-the-price-displayed-on-the-crypto-detail-pages-different-from-the-final-buy-and-sell-price-on-the-order-page/
-        #self.sellBuffer = 0.05
-        #self.buyBuffer = 0.01
+        #self.sell_buffer = 0.05
+        #self.buy_buffer = 0.01
         
         # Set both buy and sell buffers to 0.1%
-        self.sellBuffer = 0.001
-        self.buyBuffer = 0.001
+        self.sell_buffer = 0.001
+        self.buy_buffer = 0.001
         
         self.interval = "15second"
         self.span = "hour"
 
         self.price_sma_hour = {stocks[i]: 0 for i in range(0, len(stocks))}
+    
+    def set_interval(self, interval):
+        self.interval = interval
+    
+    def set_span(self, span):
+        self.span = span
+    
+    def get_interval(self):
+        return self.interval
+    
+    def get_span(self):
+        return self.span
+    
+    def set_sell_buffer(self, buffer):
+        self.sell_buffer = buffer
+    
+    def set_buy_buffer(self, buffer):
+        self.buy_buffer = buffer
+    
+    def get_stocks(self):
+        return self.stocks
+    
+    def get_sma_hour(self):
+        return self.sma_hour
+    
+    def get_price_sma_hour(self):
+        return self.price_sma_hour
+    
+    def get_start_time(self):
+        return self.start_time
+    
+    def set_start_time(self, time):
+        self.start_time = time
+    
+    def get_previous_time(self, stock):
+        return self.previous_time[self.stocks.index(stock)]
+    
+    def set_previous_time(self, stock, time):
+        self.previous_time[self.stocks.index(stock)] = time
 
     def get_historical_prices(self, rhcrypto, stock, interval, span):
         span_interval = {'day': '5minute', 'week': '10minute', 'month': 'hour', '3month': 'hour', 'year': 'day', '5year': 'week'}
@@ -48,16 +86,16 @@ class Trader():
         df_price = df_price.rename(columns={'close_price': stock})
         df_price = df_price.set_index('begins_at')
 
-        return(df_price)
+        return df_price
 
     def get_sma(self, stock, df_prices, window=12):
         sma = df_prices.rolling(window=window, min_periods=window).mean()
         sma = round(float(sma[stock].iloc[-1]), 8)
-        return(sma)
+        return sma
 
     def get_price_sma(self, price, sma):
         price_sma = round(price/sma, 8)
-        return(price_sma)
+        return price_sma
     
     def poly_fit(self, prices, window, degree):
         
@@ -82,19 +120,19 @@ class Trader():
 
     def trade_option(self, rhcrypto, stock, price):
         
-        if time.time() - self.previous_time >= 0.15:
+        if time.time() - self.get_previous_time(stock) >= 0.25:
             df_historical_prices = self.get_historical_prices(rhcrypto, stock, interval=self.interval, span=self.span)
-            self.previous_time = time.time()
-            
+            self.set_previous_time(stock, time.time())
+
             # gets new sma_hour every 15 seconds
             self.sma_hour[stock] = self.get_sma(stock, df_historical_prices[-12:], window=12)
 
         self.price_sma_hour[stock] = self.get_price_sma(price, self.sma_hour[stock])
         p_sma = self.price_sma_hour[stock]
         
-        if self.price_sma_hour[stock] < 1.0 - self.buyBuffer:
+        if self.price_sma_hour[stock] < 1.0 - self.buy_buffer:
             i1 = "BUY"
-        elif self.price_sma_hour[stock] > 1.0 + self.sellBuffer:
+        elif self.price_sma_hour[stock] > 1.0 + self.sell_buffer:
             i1 = "SELL"
         else:
             i1 = "NONE"
@@ -138,7 +176,7 @@ class Trader():
         else:
             trade = "HOLD"
 
-        return(trade)
+        return trade
     
     def get_runtime(self):
         return time.time() - self.start_time
