@@ -1,8 +1,10 @@
-# Create your own personal trading strategy to trade with
+import config
+import grapher
+
 import numpy as np
-from sklearn.linear_model import LinearRegression
-from sklearn.preprocessing import PolynomialFeatures
 import pandas as pd
+import time
+#import warnings
 
 import robin_stocks.robinhood as rh
 import robin_stocks.helper as helper
@@ -13,33 +15,28 @@ class Trader():
         self.stocks = stocks
 
         self.sma_hour = {stocks[i]: 0 for i in range(0, len(stocks))}
-        self.run_time = 0
+        
+        self.start_time = time.time()
+        self.previous_time = time.time()
         
         # On Robinhood market orders are adjusted to limit orders collared up to 1% for buys, and 5% for sells.
         # https://robinhood.com/us/en/support/articles/why-is-the-price-displayed-on-the-crypto-detail-pages-different-from-the-final-buy-and-sell-price-on-the-order-page/
-        self.sellBuffer = 0.05
-        self.buyBuffer = 0.01
+        #self.sellBuffer = 0.05
+        #self.buyBuffer = 0.01
+        
+        # Set both buy and sell buffers to 0.1%
+        self.sellBuffer = 0.001
+        self.buyBuffer = 0.001
+        
+        self.interval = "15second"
+        self.span = "hour"
 
         self.price_sma_hour = {stocks[i]: 0 for i in range(0, len(stocks))}
 
-    def get_historical_prices(self, rhcrypto, stock, span):
+    def get_historical_prices(self, rhcrypto, stock, interval, span):
         span_interval = {'day': '5minute', 'week': '10minute', 'month': 'hour', '3month': 'hour', 'year': 'day', '5year': 'week'}
-        interval = span_interval[span]
-
-        '''Due to users receiving a 404 Error, the historical data section has been updated'''
-        # symbols = helper.inputs_to_set(stock)
-        # url = urls.historicals()
-        # payload = { 'symbols' : ','.join(symbols),
-        #             'interval' : interval,
-        #             'span' : span,
-        #             'bounds' : 'regular'}
-        #
-        # data = helper.request_get(url,'results',payload)
-        #
-        # historical_data = []
-        # for item in data:
-        #     for subitem in item['historicals']:
-        #         historical_data.append(subitem)
+        #interval = span_interval[span]
+        
         historical_data = rh.crypto.get_crypto_historicals(stock, interval=interval, span=span, bounds='24_7')
 
         df = pd.DataFrame(historical_data)
@@ -62,15 +59,34 @@ class Trader():
         price_sma = round(price/sma, 8)
         return(price_sma)
     
-    def polynomial_fit(self, stock, df_prices, window):
-        # STILL NEED TO IMPLEMENT
-        y = df_prices.rolling(window=window, min_periods=window)
-        x = list(range(0, window))
+    def poly_fit(self, prices, window, degree):
+        
+        y_data = prices.to_numpy()
+        
+        y = np.zeros(window, float)
+        
+        count = 0
+        
+        for i in range(len(y_data) - window, len(y_data)):
+            y[count] = y_data[i][0]
+            count += 1
+        
+        x = list(range(window))
+        
+        # if full is False or is left unchanged keep the line below
+        #warnings.simplefilter('ignore', np.RankWarning)
+        
+        fit_data = np.polynomial.polynomial.polyfit(x, y, degree, full=True)
+        
+        return fit_data
 
     def trade_option(self, rhcrypto, stock, price):
-        # gets new sma_hour every 5min
-        if self.run_time % (5) == 0:
-            df_historical_prices = self.get_historical_prices(rhcrypto, stock, span='day')
+        
+        if time.time() - self.previous_time >= 0.15:
+            df_historical_prices = self.get_historical_prices(rhcrypto, stock, interval=self.interval, span=self.span)
+            self.previous_time = time.time()
+            
+            # gets new sma_hour every 15 seconds
             self.sma_hour[stock] = self.get_sma(stock, df_historical_prices[-12:], window=12)
 
         self.price_sma_hour[stock] = self.get_price_sma(price, self.sma_hour[stock])
@@ -83,11 +99,46 @@ class Trader():
         else:
             i1 = "NONE"
         
-        if i1 == "BUY":
+        min_resid = float('inf')
+        optimal_coeff, optimal_deg, optimal_window = [], 0, 0
+        
+        for window in range(10, len(df_historical_prices)):
+            for degree in range(1, 11):
+                coeff, fit_data = self.poly_fit(df_historical_prices, window, degree)
+                
+                if fit_data[2][0] < min_resid:
+                    min_resid = fit_data[2][0]
+                    optimal_coeff = list(coeff)
+                    optimal_deg = fit_data[1]
+                    optimal_window = window
+        
+        optimal_coeff.reverse()
+        
+        grapher.plot_crypto_model(stock, df_historical_prices, optimal_window, optimal_deg, optimal_coeff, self.interval, self.span)
+        
+        print(stock + " optimal polynomial fit:", optimal_coeff)
+        
+        # Buy low and sell high
+        derivative = np.polyder(np.poly1d(optimal_coeff))
+        
+        if derivative(optimal_window - 1) > 0:
+            print(stock + " has a rising behaviour: sell")
+            i2 = "SELL"
+        elif derivative(optimal_window - 1) < 0:
+            print(stock + " has a falling behaviour: buy")
+            i2 = "BUY"
+        else:
+            i2 = "NONE"
+        
+        # Determine the trade (i1: simple moving average with normalization, i2: polynomial fit)
+        if i2 == "BUY":
             trade = "BUY"
-        elif i1 == "SELL":
+        elif i2 == "SELL":
             trade = "SELL"
         else:
             trade = "HOLD"
 
         return(trade)
+    
+    def get_runtime(self):
+        return time.time() - self.start_time

@@ -6,6 +6,7 @@ import robin_stocks.robinhood as rh
 import datetime as dt
 import time
 import pandas as pd
+import numpy as np
 
 from robinhood_crypto_api import RobinhoodCrypto
 
@@ -118,13 +119,33 @@ def build_dataframes(df_trades, trade_dict, df_prices, price_dict):
     df_prices.loc[time_now] = price_dict
     return(df_trades, df_prices)
 
+def display_time(seconds, granularity=5):
+    result = []
+    
+    intervals = (
+    ('weeks', 604800),  # 60 * 60 * 24 * 7
+    ('days', 86400),    # 60 * 60 * 24
+    ('hours', 3600),    # 60 * 60
+    ('minutes', 60),
+    ('seconds', 1),
+    )
+
+    for name, count in intervals:
+        value = seconds // count
+        if value:
+            seconds -= value * count
+            if value == 1:
+                name = name.rstrip('s')
+            result.append("{} {}".format(value, name))
+    return ', '.join(result[:granularity])
+
 if __name__ == "__main__":
     login(days=1)
     rhcrypto = RobinhoodCrypto(config.USERNAME, config.PASSWORD)
     
     stocks = config.CRYPTO
     
-    print('stocks:', stocks)
+    print('cryptos:', stocks)
     
     cash, equity = get_cash()
 
@@ -142,9 +163,11 @@ if __name__ == "__main__":
         holdings, bought_price = get_holdings_and_bought_price(rhcrypto, stocks)
         
         print("===================================")
-        print('holdings:', holdings)
+        print("runtime: " + display_time(ts.get_runtime()))
+        print('crypto holdings:', holdings)
 
         for i, stock in enumerate(stocks):
+            
             price = float(prices[i])
             
             print('{} = ${}'.format(stock, price))
@@ -156,22 +179,19 @@ if __name__ == "__main__":
             if trade == "BUY":
                 allowable_holdings = (cash / 10) / price
                 
-                if allowable_holdings > 0.0 and holdings[stock] == 0:
+                if allowable_holdings > 0:
                     buy(stock, allowable_holdings, price)
                 else:
                     print("Not enough allowable holdings")
+                    trade = "UNABLE TO BUY"
             elif trade == "SELL":
-                if holdings[stock] > 0.0:
+                if holdings[stock] > 0:
                     sell(stock, holdings[stock], price)
                 else:
                     print("Not enough holdings")
-
-            price_dict[stock] = price
+                    trade = "UNABLE TO SELL"
             
-            if holdings[stock] > 0 and trade != "SELL":
-                trade = "HOLD"
-            elif holdings[stock] == 0 and trade != "BUY":
-                trade = "WAIT"
+            price_dict[stock] = price
             
             trade_dict[stock] = trade
 
