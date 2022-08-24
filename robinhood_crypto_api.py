@@ -56,7 +56,7 @@ def reauth(f):
 
 
 class RobinhoodCrypto():
-    # Implemented all tradable cryptos into PAIRS (July 15, 2022)
+    # Implemented all tradable cryptos into PAIRS (August 20, 2022)
     PAIRS = {
         'BTC': '3d961844-d360-45fc-989b-f6fca761d511',
         'ETH': '76637d50-c702-4ed1-bcb5-5b0732a81f48',
@@ -70,7 +70,9 @@ class RobinhoodCrypto():
         'MATIC': 'b668301c-44f9-4fbf-88e4-8140846f15ba',
         'COMP': '715af4b3-26d0-4cd0-ad07-7a1cf5dc734a',
         'LINK': '9f0a3a2e-e72e-4361-bf15-91d962487922',
-        'UNI': '33316259-af8c-4f31-86a4-c5c07e12d625'
+        'UNI': '33316259-af8c-4f31-86a4-c5c07e12d625',
+        'XLM': '7a04fe7a-e3a8-4a07-8c35-d0fec9f35569',
+        'AVAX': 'f62a25b6-31c0-4c92-846d-3c8105627b62'
     }
 
     ENDPOINTS = {

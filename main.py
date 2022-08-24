@@ -1,5 +1,5 @@
 import config
-import trade_strat
+import trader
 import grapher
 
 import robin_stocks.robinhood as rh
@@ -11,7 +11,7 @@ import numpy as np
 from robinhood_crypto_api import RobinhoodCrypto
 
 def login(days):
-    time_logged_in = 60*60*24*days
+    time_logged_in = 60 * 60 * 24 * days
     rh.authentication.login(username=config.USERNAME,
                             password=config.PASSWORD,
                             expiresIn=time_logged_in,
@@ -45,6 +45,8 @@ def get_cash():
 
     cash = float(rh_cash['cash'])
     equity = float(rh_cash['equity'])
+    
+    
     return(cash, equity)
 
 def get_holdings_and_bought_price(rhcrypto, stocks):
@@ -115,8 +117,11 @@ def buy(rhcrypto, stock, allowable_holdings, price):
 
 def build_dataframes(df_trades, trade_dict, df_prices, price_dict):
     time_now = str(dt.datetime.now().time())[:8]
+    
     df_trades.loc[time_now] = trade_dict
     df_prices.loc[time_now] = price_dict
+    
+    
     return(df_trades, df_prices)
 
 def display_time(seconds, granularity=5):
@@ -137,6 +142,8 @@ def display_time(seconds, granularity=5):
             if value == 1:
                 name = name.rstrip('s')
             result.append("{} {}".format(value, name))
+    
+    
     return ', '.join(result[:granularity])
 
 if __name__ == "__main__":
@@ -149,7 +156,7 @@ if __name__ == "__main__":
     
     cash, equity = get_cash()
 
-    ts = trade_strat.Trader(stocks)
+    ts = trader.Trader(stocks)
 
     trade_dict = {stocks[i]: 0 for i in range(0, len(stocks))}
     price_dict = {stocks[i]: 0 for i in range(0, len(stocks))}
