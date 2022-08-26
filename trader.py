@@ -1,9 +1,9 @@
-import grapher
-
 import numpy as np
 import pandas as pd
+import datetime as dt
 import time
-#import warnings
+import matplotlib.pyplot as plt
+import warnings
 
 import robin_stocks.robinhood as rh
 import robin_stocks.helper as helper
@@ -19,11 +19,23 @@ class Trader():
         # Set both buy and sell buffers to 0.1%
         self.sell_buffer = 0.001
         self.buy_buffer = 0.001
+
+        # Loss threshold taken to be a positive value
+        self.loss_threshold = abs(5.00)
         
         self.interval = "5minute"
         self.span = "day"
 
         self.profit = 0.0
+    
+    def get_loss_threshold(self):
+        return self.loss_threshold
+    
+    def set_loss_threshold(self, loss):
+        if loss >= 0:
+            self.loss_threshold = loss
+        else:
+            print("Loss must be set to a POSITIVE value: loss threshold not reset")
     
     def get_runtime(self):
         return time.time() - self.start_time
@@ -88,6 +100,35 @@ class Trader():
     
     def set_previous_time(self, stock, time):
         self.previous_time[self.stocks.index(stock)] = time
+    
+    def plot_crypto_model(self, stock, df, window, degree, coefficients, interval, span, pause=1):
+        # df is df_historical_prices
+        stock_prices = []
+        
+        stock_data = df.to_numpy()
+        
+        for i in range(len(stock_data) - window, len(stock_data)):
+            stock_prices.append(stock_data[i][0])
+        
+        times = list(range(len(stock_prices)))
+        
+        plt.plot(times, stock_prices, 'k-')
+        
+        model_output = []
+        
+        for instance in times:
+            model_output.append(np.polyval(coefficients, instance))
+        
+        plt.plot(times, model_output, 'b-')
+        
+        title = stock + " vs. Model: deg" + str(degree) + ", window" + str(window) + ", interval" + interval + ", span" + span
+        
+        plt.title(title)
+        plt.ylabel("Price ($)")
+        plt.xlabel("Time (" + interval + ")")
+        plt.legend([stock, "model"], loc="upper left")
+        plt.draw()
+        plt.pause(pause)
 
     def get_historical_prices(self, rhcrypto, stock, interval, span):
         span_interval = {'day': '5minute', 'week': '10minute', 'month': 'hour', '3month': 'hour', 'year': 'day', '5year': 'week'}
@@ -149,7 +190,7 @@ class Trader():
         
         optimal_coeff.reverse()
         
-        grapher.plot_crypto_model(stock, df_historical_prices, optimal_window, optimal_deg, optimal_coeff, self.interval, self.span)
+        self.plot_crypto_model(stock, df_historical_prices, optimal_window, optimal_deg, optimal_coeff, self.interval, self.span)
         
         print(stock + " optimal polynomial fit:", optimal_coeff)
         

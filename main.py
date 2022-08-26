@@ -1,6 +1,5 @@
 import config
 import trader
-import grapher
 
 import robin_stocks.robinhood as rh
 import datetime as dt
@@ -10,7 +9,12 @@ import numpy as np
 
 from robinhood_crypto_api import RobinhoodCrypto
 
-def login(days):
+def login():
+    days = int(input("Enter the number of days to run the automated trader (POSITIVE integer > 0): "))
+    
+    while days <= 0:
+        days = int(input("Enter the number of days to run the automated trader (POSITIVE integer > 0): "))
+
     time_logged_in = 60 * 60 * 24 * days
     rh.authentication.login(username=config.USERNAME,
                             password=config.PASSWORD,
@@ -24,24 +28,19 @@ def logout():
     
     print("logout successful")
 
-def continue_trading():
-    """
-    market = False
-    time_now = dt.datetime.now().time()
-
-    market_open = dt.time(9,30,0) # 9:30AM
-    market_close = dt.time(15,59,0) # 3:59PM
-
-    if time_now > market_open and time_now < market_close:
-        market = True
+def continue_trading(tr=''):
+    # Assumes there is no condition for which the user will want the trading bot to stop trading
+    if tr == '':
+        return True
     else:
-        print('### market is closed')
-        pass
+        if tr.get_profit() >= -1 * tr.get_loss_threshold():
+            return True
+        else:
+            print("Loss exceeded $" + str(tr.get_loss_threshold()) + ": terminating automated trading")
+            
+            #logout()
 
-    return(market)
-    """
-    
-    return True
+            return False
 
 def get_cash():
     rh_cash = rh.account.build_user_profile()
@@ -165,7 +164,7 @@ def get_crypto_holdings_capital(rhcrypto, holdings):
     return capital
 
 if __name__ == "__main__":
-    login(days=1)
+    login()
 
     rhcrypto = RobinhoodCrypto(config.USERNAME, config.PASSWORD)
     
@@ -176,8 +175,6 @@ if __name__ == "__main__":
     cash, equity = get_cash()
 
     tr = trader.Trader(stocks)
-    
-    initial_cash = cash
 
     trade_dict = {stocks[i]: 0 for i in range(0, len(stocks))}
     price_dict = {stocks[i]: 0 for i in range(0, len(stocks))}
@@ -185,21 +182,21 @@ if __name__ == "__main__":
     df_trades = pd.DataFrame(columns=stocks)
     df_prices = pd.DataFrame(columns=stocks)
     
-    inital_crypto_capital_is_calculated = False
+    inital_capital_is_init = False
 
-    while continue_trading():
+    while continue_trading(tr):
         prices = rhcrypto.get_latest_price(stocks)
         
         holdings, bought_price = get_holdings_and_bought_price(rhcrypto, stocks)
         
         cash, equity = get_cash()
         
-        if inital_crypto_capital_is_calculated == False:
-            initial_crypto_capital = get_crypto_holdings_capital(rhcrypto, holdings)
+        if inital_capital_is_init == False:
+            initial_capital = get_crypto_holdings_capital(rhcrypto, holdings) + cash
             
-            inital_crypto_capital_is_calculated = True
+            inital_capital_is_init = True
         
-        tr.set_profit(cash + get_crypto_holdings_capital(rhcrypto, holdings) - initial_cash - initial_crypto_capital)
+        tr.set_profit(cash + get_crypto_holdings_capital(rhcrypto, holdings) - initial_capital)
         
         print("==========================================")
         print("runtime: " + display_time(tr.get_runtime()))
