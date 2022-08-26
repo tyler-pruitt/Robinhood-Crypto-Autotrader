@@ -12,25 +12,37 @@ import robin_stocks.urls as urls
 class Trader():
     def __init__(self, stocks):
         self.stocks = stocks
-
-        self.sma_hour = {stocks[i]: 0 for i in range(0, len(stocks))}
         
         self.start_time = time.time()
         self.previous_time = [time.time()] * len(self.stocks)
-        
-        # On Robinhood market orders are adjusted to limit orders collared up to 1% for buys, and 5% for sells.
-        # https://robinhood.com/us/en/support/articles/why-is-the-price-displayed-on-the-crypto-detail-pages-different-from-the-final-buy-and-sell-price-on-the-order-page/
-        #self.sell_buffer = 0.05
-        #self.buy_buffer = 0.01
         
         # Set both buy and sell buffers to 0.1%
         self.sell_buffer = 0.001
         self.buy_buffer = 0.001
         
-        self.interval = "15second"
-        self.span = "hour"
+        self.interval = "5minute"
+        self.span = "day"
 
-        self.price_sma_hour = {stocks[i]: 0 for i in range(0, len(stocks))}
+        self.profit = 0.0
+    
+    def set_profit(self, profit):
+        self.profit = profit
+    
+    def get_profit(self):
+        return self.profit
+    
+    def display_profit(self, currency='$'):
+
+        if self.profit >= 0:
+            text = '+'
+        else:
+            text = '-'
+        
+        text += currency
+
+        text += str(abs(self.profit))
+
+        print(text)
     
     def set_interval(self, interval):
         self.interval = interval
@@ -52,12 +64,6 @@ class Trader():
     
     def get_stocks(self):
         return self.stocks
-    
-    def get_sma_hour(self):
-        return self.sma_hour
-    
-    def get_price_sma_hour(self):
-        return self.price_sma_hour
     
     def get_start_time(self):
         return self.start_time
@@ -87,15 +93,6 @@ class Trader():
         df_price = df_price.set_index('begins_at')
 
         return df_price
-
-    def get_sma(self, stock, df_prices, window=12):
-        sma = df_prices.rolling(window=window, min_periods=window).mean()
-        sma = round(float(sma[stock].iloc[-1]), 8)
-        return sma
-
-    def get_price_sma(self, price, sma):
-        price_sma = round(price/sma, 8)
-        return price_sma
     
     def poly_fit(self, prices, window, degree):
         
@@ -121,21 +118,9 @@ class Trader():
     def trade_option(self, rhcrypto, stock, price):
         
         if time.time() - self.get_previous_time(stock) >= 0.25:
+            
             df_historical_prices = self.get_historical_prices(rhcrypto, stock, interval=self.interval, span=self.span)
             self.set_previous_time(stock, time.time())
-
-            # gets new sma_hour every 15 seconds
-            self.sma_hour[stock] = self.get_sma(stock, df_historical_prices[-12:], window=12)
-
-        self.price_sma_hour[stock] = self.get_price_sma(price, self.sma_hour[stock])
-        p_sma = self.price_sma_hour[stock]
-        
-        if self.price_sma_hour[stock] < 1.0 - self.buy_buffer:
-            i1 = "BUY"
-        elif self.price_sma_hour[stock] > 1.0 + self.sell_buffer:
-            i1 = "SELL"
-        else:
-            i1 = "NONE"
         
         min_resid = float('inf')
         optimal_coeff, optimal_deg, optimal_window = [], 0, 0
@@ -156,22 +141,18 @@ class Trader():
         
         print(stock + " optimal polynomial fit:", optimal_coeff)
         
-        # Buy low and sell high
+        # Determine the trend of the prices
         derivative = np.polyder(np.poly1d(optimal_coeff))
         
         if derivative(optimal_window - 1) > 0:
-            print(stock + " has a rising behaviour: sell")
-            i2 = "SELL"
-        elif derivative(optimal_window - 1) < 0:
-            print(stock + " has a falling behaviour: buy")
-            i2 = "BUY"
-        else:
-            i2 = "NONE"
-        
-        # Determine the trade (i1: simple moving average with normalization, i2: polynomial fit)
-        if i2 == "BUY":
+            print(stock + " has a rising behaviour: buy")
+
+            # If the prediction is that the price will increase, buy
             trade = "BUY"
-        elif i2 == "SELL":
+        elif derivative(optimal_window - 1) < 0:
+            print(stock + " has a falling behaviour: sell")
+
+            # If the prediction is that the price will decrease, sell
             trade = "SELL"
         else:
             trade = "HOLD"

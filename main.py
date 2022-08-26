@@ -21,8 +21,10 @@ def login(days):
 
 def logout():
     rh.authentication.logout()
+    
+    print("logout successful")
 
-def open_market():
+def continue_trading():
     """
     market = False
     time_now = dt.datetime.now().time()
@@ -38,6 +40,7 @@ def open_market():
 
     return(market)
     """
+    
     return True
 
 def get_cash():
@@ -67,7 +70,8 @@ def get_holdings_and_bought_price(rhcrypto, stocks):
 
 def sell(rhcrypto, stock, holdings, price):
     # sell_price = round(price - 0.10, 2)
-    # un-comment when ready to trade on the live market
+    
+    # un-comment below when ready to trade on the live market
     
     print('sell is currently commented')
     
@@ -92,7 +96,8 @@ def sell(rhcrypto, stock, holdings, price):
 
 def buy(rhcrypto, stock, allowable_holdings, price):
     # buy_price = round((price + 0.10), 2)
-    # un-comment when ready to trade on the live market
+    
+    # un-comment below when ready to trade on the live market
     
     print('buy is currently commented')
     
@@ -146,8 +151,22 @@ def display_time(seconds, granularity=5):
     
     return ', '.join(result[:granularity])
 
+def display_holdings(holdings):
+    for crypto, amount in holdings.items():
+        
+        print('\t' + crypto + ' ' + str(amount))
+
+def get_crypto_holdings_capital(rhcrypto, holdings):
+    capital = 0
+    
+    for crypto_name, crypto_amount in holdings.items():
+        capital += crypto_amount * float(rhcrypto.get_latest_price([crypto_name])[0])
+        
+    return capital
+
 if __name__ == "__main__":
     login(days=1)
+
     rhcrypto = RobinhoodCrypto(config.USERNAME, config.PASSWORD)
     
     stocks = config.CRYPTO
@@ -156,30 +175,52 @@ if __name__ == "__main__":
     
     cash, equity = get_cash()
 
-    ts = trader.Trader(stocks)
+    tr = trader.Trader(stocks)
+    
+    initial_cash = cash
 
     trade_dict = {stocks[i]: 0 for i in range(0, len(stocks))}
     price_dict = {stocks[i]: 0 for i in range(0, len(stocks))}
     
     df_trades = pd.DataFrame(columns=stocks)
     df_prices = pd.DataFrame(columns=stocks)
+    
+    inital_crypto_capital_is_calculated = False
 
-    while open_market():
+    while continue_trading():
         prices = rhcrypto.get_latest_price(stocks)
         
         holdings, bought_price = get_holdings_and_bought_price(rhcrypto, stocks)
         
+        cash, equity = get_cash()
+        
+        if inital_crypto_capital_is_calculated == False:
+            initial_crypto_capital = get_crypto_holdings_capital(rhcrypto, holdings)
+            
+            inital_crypto_capital_is_calculated = True
+        
+        tr.set_profit(cash + get_crypto_holdings_capital(rhcrypto, holdings) - initial_cash - initial_crypto_capital)
+        
         print("==========================================")
-        print("runtime: " + display_time(ts.get_runtime()))
-        print('crypto holdings:', holdings)
+        print("runtime: " + display_time(tr.get_runtime()))
+        
+        print('crypto holdings:')
+        display_holdings(holdings)
+        
+        print("equity: $" + str(equity))
+        print("cash: $" + str(cash))
+        
+        print("profit: ", end="")
+        tr.display_profit()
+        print("\n", end='')
 
         for i, stock in enumerate(stocks):
             
             price = float(prices[i])
             
-            print('{} = ${}'.format(stock, price))
+            print('\n{} = ${}'.format(stock, price))
 
-            trade = ts.trade_option(rhcrypto, stock, price)
+            trade = tr.trade_option(rhcrypto, stock, price)
             
             print('trade:', trade, end='\n\n')
             
@@ -187,15 +228,20 @@ if __name__ == "__main__":
                 allowable_holdings = (cash / 10) / price
                 
                 if allowable_holdings > 0:
-                    buy(stock, allowable_holdings, price)
+                    
+                    buy(rhcrypto, stock, allowable_holdings, price)
+
                 else:
                     print("Not enough allowable holdings")
+                    
                     trade = "UNABLE TO BUY"
             elif trade == "SELL":
                 if holdings[stock] > 0:
-                    sell(stock, holdings[stock], price)
+
+                    sell(rhcrypto, stock, holdings[stock], price)
                 else:
                     print("Not enough holdings")
+
                     trade = "UNABLE TO SELL"
             
             price_dict[stock] = price
@@ -204,7 +250,8 @@ if __name__ == "__main__":
 
         df_trades, df_prices = build_dataframes(df_trades, trade_dict, df_prices, price_dict)
         
-        grapher.active_graph(grapher.normalize(df_prices), df_trades)
+        print('\ndf_prices \n', df_prices, end='\n\n')
+        print('df_trades \n', df_trades, end='\n\n')
 
         time.sleep(30)
 
