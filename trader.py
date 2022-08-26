@@ -25,6 +25,9 @@ class Trader():
 
         self.profit = 0.0
     
+    def get_runtime(self):
+        return time.time() - self.start_time
+
     def set_profit(self, profit):
         self.profit = profit
     
@@ -59,11 +62,20 @@ class Trader():
     def set_sell_buffer(self, buffer):
         self.sell_buffer = buffer
     
+    def get_sell_buffer(self):
+        return self.sell_buffer
+    
     def set_buy_buffer(self, buffer):
         self.buy_buffer = buffer
     
+    def get_buy_buffer(self):
+        return self.buy_buffer
+    
     def get_stocks(self):
         return self.stocks
+    
+    def set_stocks(self, stocks):
+        self.stocks = stocks
     
     def get_start_time(self):
         return self.start_time
@@ -158,6 +170,3 @@ class Trader():
             trade = "HOLD"
 
         return trade
-    
-    def get_runtime(self):
-        return time.time() - self.start_time
