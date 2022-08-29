@@ -31,20 +31,6 @@ def logout():
     
     print("logout successful")
 
-def continue_trading(tr=''):
-    # Assumes there is no condition for which the user will want the trading bot to stop trading
-    if tr == '':
-        return True
-    else:
-        if tr.get_profit() >= -1 * tr.get_loss_threshold():
-            return True
-        else:
-            print("Loss exceeded $" + str(tr.get_loss_threshold()) + ": terminating automated trading")
-            
-            #logout()
-
-            return False
-
 def get_cash():
     rh_cash = rh.account.build_user_profile()
 
@@ -54,6 +40,7 @@ def get_cash():
     
     return(cash, equity)
 
+# NEEDS TO BE FIXED
 def get_holdings_and_bought_price(rhcrypto, stocks):
     # rh.get_crypto_positions()
     
@@ -72,57 +59,44 @@ def get_holdings_and_bought_price(rhcrypto, stocks):
 
     return(holdings, bought_price)
 
-def sell(rhcrypto, stock, holdings, price):
+# NEEDS TO BE FIXED
+# https://github.com/wang-ye/robinhood-crypto/issues/9
+def sell(rhcrypto, stock, holdings, price, is_live):
     # sell_price = round(price - 0.10, 2)
-    
-    # un-comment below when ready to trade on the live market
-    
-    print('SELL IS CURRENTLY COMMENTED')
     
     # sell_order = rh.orders.order_sell_limit(symbol=stock,
     #                                         quantity=holdings,
     #                                         limitPrice=sell_price,
     #                                         timeInForce='gfd')
-    """
-    sell_order_info = rhcrypto.trade(
-        pair=stock,
-        price=round(price, 2),
-        quantity=holdings,
-        side="buy",
-        time_in_force="gtc",
-        type="limit"
-    )
-    """
-
-    print('### Trying to SELL {} amount of {} at ${} totaling +${}'.format(holdings, stock, price, round(holdings * price, 2)))
     
-    #return sell_order_info
+    if is_live:
+        
+        sell_order_info = rhcrypto.trade(pair=stock, price=round(price, 2), quantity=holdings, side="sell", time_in_force="gtc", type="limit")
+        
+        print('### Trying to SELL {} amount of {} at ${} totaling +${}'.format(holdings, stock, price, round(holdings * price, 2)))
+        
+        return sell_order_info()
+    else:
+        print('### Trying to SELL {} amount of {} at ${} totaling +${}'.format(holdings, stock, price, round(holdings * price, 2)))
 
-def buy(rhcrypto, stock, allowable_holdings, price):
+# NEEDS TO BE FIXED
+# https://github.com/wang-ye/robinhood-crypto/issues/9
+def buy(rhcrypto, stock, allowable_holdings, price, is_live):
     # buy_price = round((price + 0.10), 2)
-    
-    # un-comment below when ready to trade on the live market
-    
-    print('BUY IS CURRENTLY COMMENTED')
     
     # buy_order = rh.orders.order_buy_limit(symbol=stock,
     #                                       quantity=allowable_holdings,
     #                                       limitPrice=buy_price,
     #                                       timeInForce='gfd')
-    """
-    buy_order_info = rhcrypto.trade(
-        pair=stock,
-        price=round(price, 2),
-        quantity=allowable_holdings,
-        side="sell",
-        time_in_force="gtc",
-        type="limit"
-    )
-    """
-
-    print('### Trying to BUY {} of {} at ${} totaling -${}'.format(allowable_holdings, stock, price, round(allowable_holdings * price, 2)))
-
-    #return buy_order_info
+    
+    if is_live:
+        buy_order_info = rhcrypto.trade(pair=stock, price=round(price, 2), quantity=allowable_holdings, side="buy", time_in_force="gtc", type="limit")
+        
+        print('### Trying to BUY {} of {} at ${} totaling -${}'.format(allowable_holdings, stock, price, round(allowable_holdings * price, 2)))
+        
+        return buy_order_info
+    else:
+        print('### Trying to BUY {} of {} at ${} totaling -${}'.format(allowable_holdings, stock, price, round(allowable_holdings * price, 2)))
 
 def build_dataframes(df_trades, trade_dict, df_prices, price_dict):
     time_now = str(dt.datetime.now().time())[:8]
@@ -138,6 +112,7 @@ def display_holdings(holdings):
         
         print('\t' + crypto + ' ' + str(amount) + " at $" + str(rh.get_crypto_quote(crypto)['mark_price']))
 
+# NEEDS TO BE FIXED
 def get_crypto_holdings_capital(rhcrypto, holdings):
     capital = 0
     
@@ -164,6 +139,11 @@ if __name__ == "__main__":
     while mode != 'LIVE' and mode != 'BACKTEST' and mode != 'SAFE-LIVE':
         mode = input("Select trader setting ('LIVE', 'BACKTEST', or 'SAFE-LIVE'): ")
     
+    if mode == 'LIVE':
+        is_live = True
+    else:
+        is_live = False
+    
     rhcrypto = RobinhoodCrypto(config.USERNAME, config.PASSWORD)
     
     stocks = config.CRYPTO
@@ -182,7 +162,7 @@ if __name__ == "__main__":
     
     inital_capital_is_init = False
 
-    while continue_trading(tr):
+    while tr.continue_trading():
         prices = rhcrypto.get_latest_price(stocks)
         
         holdings, bought_price = get_holdings_and_bought_price(rhcrypto, stocks)
@@ -215,7 +195,7 @@ if __name__ == "__main__":
             
             print('\n{} = ${}'.format(stock, price))
 
-            trade = tr.trade_option(stock)
+            trade = tr.determine_trade(stock)
             
             print('trade:', trade, end='\n\n')
             
@@ -224,7 +204,7 @@ if __name__ == "__main__":
                 
                 if allowable_holdings > 0:
                     
-                    buy(rhcrypto, stock, allowable_holdings, price)
+                    buy(rhcrypto, stock, allowable_holdings, price, is_live)
 
                 else:
                     print("Not enough allowable holdings")
@@ -233,7 +213,7 @@ if __name__ == "__main__":
             elif trade == "SELL":
                 if holdings[stock] > 0:
 
-                    sell(rhcrypto, stock, holdings[stock], price)
+                    sell(rhcrypto, stock, holdings[stock], price, is_live)
                 else:
                     print("Not enough holdings")
 

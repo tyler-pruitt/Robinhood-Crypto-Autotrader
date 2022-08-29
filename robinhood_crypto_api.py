@@ -99,19 +99,30 @@ class RobinhoodCrypto():
         "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36",
     }
 
-    def __init__(self, username='', password='', access_token=''):
+    def __init__(self, mode, username='', password='', access_token=''):
+        self.mode = mode
+        
+        if self.mode == 'LIVE':
+            self.is_live = True
+        else:
+            self.is_live = False
+        
         self.username = username
         self.password = password
+        
         self.device_token = None
+        
         if access_token:
             _access_token = access_token
         else:
             _access_token = self.get_access_token(self.username, self.password)
+        
         self.setup_for_api_call(_access_token)
 
     def setup_for_api_call(self, access_token):
         self._api_session = requests.session()
         self._api_session.headers = self.construct_api_header(access_token)
+        
         # account id is needed for many api calls. Also cache it.
         self._account_id = self.account_id()
         self._account_number = self.account_number()
@@ -133,13 +144,16 @@ class RobinhoodCrypto():
     @reauth
     def session_request(self, url, json_payload=None, timeout=5, method='post', request_session=None):
         session = request_session if request_session else self._api_session
+        
         try:
             resp = session.request(method, url, json=json_payload, timeout=timeout)
+            
             # import pdb; pdb.set_trace()
             resp.raise_for_status()
         except Exception as e:
             LOG.debug('Error in session request calls. Request body {}, headers {}, content {}'.format(resp.request.body, resp.request.headers, resp.content))
             LOG.exception(e)
+            
             raise e
 
         return resp.json()
@@ -147,16 +161,19 @@ class RobinhoodCrypto():
     # Copied directly from https://github.com/Jamonek/Robinhood/issues/176.
     def GenerateDeviceToken(self):
         rands = []
+        
         for i in range(0,16):
             r = random.random()
             rand = 4294967296.0 * r
             rands.append((int(rand) >> ((3 & i) << 3)) & 255)
 
         hexa = []
+        
         for i in range(0,256):
             hexa.append(str(hex(i+256)).lstrip("0x").rstrip("L")[1:])
 
         id = ""
+        
         for i in range(0,16):
             id += hexa[rands[i]]
 
@@ -172,8 +189,10 @@ class RobinhoodCrypto():
         """
         auth_session = requests.session()
         auth_session.headers = self.construct_auth_header()
+        
         if not self.device_token:
             self.device_token = self.GenerateDeviceToken()
+        
         payload = {
             'password': password,
             'username': username,
@@ -190,13 +209,18 @@ class RobinhoodCrypto():
 
         try:
             data = self.session_request(RobinhoodCrypto.ENDPOINTS['auth'], json_payload=payload, timeout=5, method='post', request_session=auth_session)
+            
             if 'mfa_required' in data.keys():
                 mfa_code = input("MFA: ")
+                
                 return self.get_access_token(username, password, mfa_code)
+            
             access_token = data['access_token']
         except requests.exceptions.HTTPError as e:
             LOG.exception(e)
+            
             raise LoginException()
+        
         return access_token
 
     def quotes(self, pair='BTC'):
@@ -209,6 +233,7 @@ class RobinhoodCrypto():
          'volume': '380373.1898'}
         """
         symbol = RobinhoodCrypto.PAIRS[pair]
+        
         assert symbol, 'unknown pair {}'.format(pair)
         url = RobinhoodCrypto.ENDPOINTS['quotes'].format(symbol)
 
@@ -216,38 +241,50 @@ class RobinhoodCrypto():
             data = self.session_request(url, method='get')
         except requests.exceptions.HTTPError:
             raise QuoteException()
+        
         return data
 
     def accounts(self, endpoint='api_accounts'):
         assert endpoint in RobinhoodCrypto.ENDPOINTS.keys()
+        
         url = RobinhoodCrypto.ENDPOINTS[endpoint]
+        
         try:
             data = self.session_request(url, method='get')
         except Exception as e:
             raise e
         if 'results' in data:
             return [x for x in data['results']]
+        
         return []
 
     def account_id(self):
         accounts_info = self.accounts(endpoint='nummus_accounts')
+        
         if accounts_info:
             return accounts_info[0]['id']
         else:
             LOG.error('account cannot be retrieved')
+            
             raise AccountNotFoundException()
+        
         return None
 
     def account_number(self):
         accounts_info = self.accounts(endpoint='api_accounts')
+        
         if accounts_info:
             return accounts_info[0]['account_number']
         else:
             LOG.error('account cannot be retrieved')
+            
             raise AccountNotFoundException()
+        
         return None
     
     def trade(self, pair, **kwargs):
+        # https://github.com/wang-ye/robinhood-crypto/issues/9
+
         """
         Return:
             dict in format
@@ -269,7 +306,9 @@ class RobinhoodCrypto():
          "updated_at":"2018-04-22T14:07:37.250180-04:00"}
         """
         assert pair in RobinhoodCrypto.PAIRS.keys(), 'pair {} is not in {}.'.format(pair, RobinhoodCrypto.PAIRS.keys())
+        
         set(kwargs.keys()) == ['price', 'quantity', 'side', 'time_in_force', 'type']
+        
         payload = {
             **{
                 'account_id': self._account_id,
@@ -278,10 +317,12 @@ class RobinhoodCrypto():
             },
             **kwargs
         }
+        
         try:
             res = self.session_request(RobinhoodCrypto.ENDPOINTS['orders'], json_payload=payload, method='post', timeout=5)
         except Exception as e:
             raise TradeException()
+        
         return res
 
     # TODO(ye): implement pagination.
@@ -290,6 +331,7 @@ class RobinhoodCrypto():
             res = self.session_request(RobinhoodCrypto.ENDPOINTS['orders'], method='get', timeout=5)
         except Exception as e:
             raise TradeException()
+        
         return res
 
     # return value:
@@ -298,18 +340,22 @@ class RobinhoodCrypto():
     # }
     def order_status(self, order_id):
         url = RobinhoodCrypto.ENDPOINTS['order_status'].format(order_id)
+        
         try:
             res = self.session_request(url, method='get')
         except Exception as e:
             raise e
+        
         return res
 
     def order_cancel(self, order_id):
         url = RobinhoodCrypto.ENDPOINTS['order_cancel'].format(order_id)
+        
         try:
             res = self.session_request(url, method='post')
         except Exception as e:
             raise e
+        
         return res
     
     def get_latest_price(self, stocks):
@@ -333,12 +379,16 @@ class RobinhoodCrypto():
         :param bounds: 24_7,regular,extended,trading
         """
         symbol = RobinhoodCrypto.PAIRS[pair]
+        
         assert symbol, 'unknown pair {}'.format(pair)
+        
         url = RobinhoodCrypto.ENDPOINTS['historicals'].format(symbol, interval, span, bounds)
+        
         try:
             res = self.session_request(url, method='get')
         except Exception as e:
             raise e
+        
         return res
 
     def holdings(self):
@@ -373,9 +423,12 @@ class RobinhoodCrypto():
             res = self.session_request(RobinhoodCrypto.ENDPOINTS['holdings'], method='get', timeout=5)
         except Exception as e:
             raise e
+        
         if 'results' in res:
             res = [x for x in res['results']]
+            
             return res
+        
         return []
     
     def build_holdings(self):
@@ -401,6 +454,7 @@ class RobinhoodCrypto():
             
             nested_data['price'] = self.get_latest_price([holdings_data[i]["currency"]["code"]])
             nested_data['quantity'] = holdings_data[i]["quantity"]
+            
             try:
                 nested_data['average_buy_price'] = str(float(holdings_data[i]["cost_bases"][0]["direct_cost_basis"]) / float(nested_data["quantity"]))
             except ZeroDivisionError:
@@ -434,8 +488,10 @@ class RobinhoodCrypto():
         }
         """
         url = RobinhoodCrypto.ENDPOINTS['portfolios'].format(self._account_number)
+        
         try:
             res = self.session_request(url, method='get')
         except Exception as e:
             raise e
+        
         return res

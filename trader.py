@@ -28,11 +28,23 @@ class Trader():
         
         self.profit = 0.0
         
-        self.previous_trade = "NONE"
-        self.trade = "NONE"
+        self.trade = "NA"
+        self.previous_trade = "NA"
     
     def __repr__(self):
         return "Trader(crypto: " + str(self.stocks) + ", profit: " + self.display_profit() + ", runtime: " + self.display_time(self.get_runtime()) + ")"
+    
+    def continue_trading(self, override=False):
+        # Assumes there is no condition for which the user will want the trading bot to stop trading
+        if override:
+            return True
+        else:
+            if self.get_profit() >= -1 * self.get_loss_threshold():
+                return True
+            else:
+                print("Loss exceeded $" + str(self.get_loss_threshold()) + ": terminating automated trading")
+    
+                return False
     
     def display_time(self, seconds, granularity=5):
         result = []
@@ -233,7 +245,7 @@ class Trader():
         
         return fit_data
 
-    def trade_option(self, stock):
+    def determine_trade(self, stock):
         
         if time.time() - self.get_previous_time(stock) >= 0.25:
             
