@@ -57,6 +57,7 @@ def reauth(f):
 
 class RobinhoodCrypto():
     # Implemented all tradable cryptos into PAIRS (August 20, 2022)
+    # Use rh.crypto.get_crypto_id('BTC') for PAIRS
     PAIRS = {
         'BTC': '3d961844-d360-45fc-989b-f6fca761d511',
         'ETH': '76637d50-c702-4ed1-bcb5-5b0732a81f48',
@@ -199,6 +200,7 @@ class RobinhoodCrypto():
         return access_token
 
     def quotes(self, pair='BTC'):
+        # rh.crypto.get_crypto_quote(symbol)
         """
         Return: dict
         {'ask_price': '8836.3300', 'bid_price': '8801.0500', 'mark_price': '8818.6900', 

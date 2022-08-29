@@ -25,8 +25,72 @@ class Trader():
         
         self.interval = "5minute"
         self.span = "day"
-
+        
         self.profit = 0.0
+        
+        self.previous_trade = "NONE"
+        self.trade = "NONE"
+    
+    def __repr__(self):
+        return "Trader(crypto: " + str(self.stocks) + ", profit: " + self.display_profit() + ", runtime: " + self.display_time(self.get_runtime()) + ")"
+    
+    def display_time(self, seconds, granularity=5):
+        result = []
+        
+        intervals = (
+        ('weeks', 604800),  # 60 * 60 * 24 * 7
+        ('days', 86400),    # 60 * 60 * 24
+        ('hours', 3600),    # 60 * 60
+        ('minutes', 60),
+        ('seconds', 1),
+        )
+    
+        for name, count in intervals:
+            value = seconds // count
+            if value:
+                seconds -= value * count
+                if value == 1:
+                    name = name.rstrip('s')
+                result.append("{} {}".format(value, name))
+        
+        
+        return ', '.join(result[:granularity])
+    
+    def get_interval_sec(self):
+        for i in range(1, len(self.interval)):
+            try:
+                digit = int(self.interval[:i])
+            except ValueError:
+                break
+        
+        time = self.interval[i-1:]
+        
+        if time == 'second':
+            sec = digit
+        elif time == 'minute':
+            sec = 60 * digit
+        elif time == 'hour':
+            sec = 3600 * digit
+        elif time == 'day':
+            sec = 86400 * digit
+        elif time == 'week':
+            sec = 604800 * digit
+        else:
+            raise ValueError
+        
+        return sec
+    
+    def set_trade(self, trade):
+        self.trade = trade
+    
+    def get_trade(self):
+        return self.trade
+    
+    def set_previous_trade(self, trade):
+        self.previous_trade = trade
+    
+    def get_previous_trade(self):
+        return self.previous_trade
     
     def get_loss_threshold(self):
         return self.loss_threshold
@@ -57,7 +121,7 @@ class Trader():
 
         text += str(abs(self.profit))
 
-        print(text)
+        return text
     
     def set_interval(self, interval):
         self.interval = interval
@@ -101,7 +165,7 @@ class Trader():
     def set_previous_time(self, stock, time):
         self.previous_time[self.stocks.index(stock)] = time
     
-    def plot_crypto_model(self, stock, df, window, degree, coefficients, interval, span, pause=1):
+    def plot_model(self, stock, df, window, degree, coefficients, pause=1):
         # df is df_historical_prices
         stock_prices = []
         
@@ -112,6 +176,7 @@ class Trader():
         
         times = list(range(len(stock_prices)))
         
+        plt.figure(clear=True)
         plt.plot(times, stock_prices, 'k-')
         
         model_output = []
@@ -121,16 +186,16 @@ class Trader():
         
         plt.plot(times, model_output, 'b-')
         
-        title = stock + " vs. Model: deg" + str(degree) + ", window" + str(window) + ", interval" + interval + ", span" + span
+        title = stock + " vs. Model: deg:" + str(degree) + ", window:" + str(window) + ", interval:" + self.interval + ", span:" + self.span
         
         plt.title(title)
         plt.ylabel("Price ($)")
-        plt.xlabel("Time (" + interval + ")")
+        plt.xlabel("Time (" + self.interval + ")")
         plt.legend([stock, "model"], loc="upper left")
         plt.draw()
         plt.pause(pause)
 
-    def get_historical_prices(self, rhcrypto, stock, interval, span):
+    def get_historical_prices(self, stock, interval, span):
         span_interval = {'day': '5minute', 'week': '10minute', 'month': 'hour', '3month': 'hour', 'year': 'day', '5year': 'week'}
         #interval = span_interval[span]
         
@@ -147,39 +212,39 @@ class Trader():
 
         return df_price
     
-    def poly_fit(self, prices, window, degree):
+    def poly_fit(self, market_data, window, degree):
         
-        y_data = prices.to_numpy()
+        price_data = market_data.to_numpy()
         
-        y = np.zeros(window, float)
+        price = np.zeros(window, float)
         
         count = 0
         
-        for i in range(len(y_data) - window, len(y_data)):
-            y[count] = y_data[i][0]
+        for i in range(len(price_data) - window, len(price_data)):
+            price[count] = price_data[i][0]
             count += 1
         
-        x = list(range(window))
+        time = list(range(window))
         
-        # if full is False or is left unchanged keep the line below
+        # If full is False or is not set to True, keep the line below
         #warnings.simplefilter('ignore', np.RankWarning)
         
-        fit_data = np.polynomial.polynomial.polyfit(x, y, degree, full=True)
+        fit_data = np.polynomial.polynomial.polyfit(x=time, y=price, deg=degree, full=True)
         
         return fit_data
 
-    def trade_option(self, rhcrypto, stock, price):
+    def trade_option(self, stock):
         
         if time.time() - self.get_previous_time(stock) >= 0.25:
             
-            df_historical_prices = self.get_historical_prices(rhcrypto, stock, interval=self.interval, span=self.span)
+            df_historical_prices = self.get_historical_prices(stock, interval=self.interval, span=self.span)
             self.set_previous_time(stock, time.time())
         
         min_resid = float('inf')
         optimal_coeff, optimal_deg, optimal_window = [], 0, 0
         
         for window in range(10, len(df_historical_prices)):
-            for degree in range(1, 11):
+            for degree in range(3, 11):
                 coeff, fit_data = self.poly_fit(df_historical_prices, window, degree)
                 
                 if fit_data[2][0] < min_resid:
@@ -190,24 +255,34 @@ class Trader():
         
         optimal_coeff.reverse()
         
-        self.plot_crypto_model(stock, df_historical_prices, optimal_window, optimal_deg, optimal_coeff, self.interval, self.span)
+        self.plot_model(stock, df_historical_prices, optimal_window, optimal_deg, optimal_coeff)
         
-        print(stock + " optimal polynomial fit:", optimal_coeff)
+        #print(stock + " optimal polynomial fit:", optimal_coeff)
+        
+        # https://pandas.pydata.org/docs/reference/api/pandas.Timestamp.html#pandas.Timestamp
+        #times = list(pd.to_datetime(df_historical_prices.loc[:, 'begins_at']))
         
         # Determine the trend of the prices
         derivative = np.polyder(np.poly1d(optimal_coeff))
         
+        # derivative(optimal_window - 1) is the last index for the times given
         if derivative(optimal_window - 1) > 0:
             print(stock + " has a rising behaviour: buy")
 
             # If the prediction is that the price will increase, buy
-            trade = "BUY"
+            self.set_previous_trade(self.get_trade())
+            
+            self.set_trade("BUY")
         elif derivative(optimal_window - 1) < 0:
             print(stock + " has a falling behaviour: sell")
 
             # If the prediction is that the price will decrease, sell
-            trade = "SELL"
+            self.set_previous_trade(self.get_trade())
+            
+            self.set_trade("SELL")
         else:
-            trade = "HOLD"
+            self.set_previous_trade(self.get_trade())
+            
+            self.set_trade("HOLD")
 
-        return trade
+        return self.get_trade()

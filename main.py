@@ -9,6 +9,8 @@ import numpy as np
 
 from robinhood_crypto_api import RobinhoodCrypto
 
+# Make sure to take advantage of https://robin-stocks.readthedocs.io/en/latest/robinhood.html#getting-crypto-information
+
 def login():
     days = int(input("Enter the number of days to run the automated trader (POSITIVE integer > 0): "))
     
@@ -16,6 +18,7 @@ def login():
         days = int(input("Enter the number of days to run the automated trader (POSITIVE integer > 0): "))
 
     time_logged_in = 60 * 60 * 24 * days
+    
     rh.authentication.login(username=config.USERNAME,
                             password=config.PASSWORD,
                             expiresIn=time_logged_in,
@@ -52,6 +55,8 @@ def get_cash():
     return(cash, equity)
 
 def get_holdings_and_bought_price(rhcrypto, stocks):
+    # rh.get_crypto_positions()
+    
     holdings = {stocks[i]: 0 for i in range(0, len(stocks))}
     bought_price = {stocks[i]: 0 for i in range(0, len(stocks))}
     
@@ -72,7 +77,7 @@ def sell(rhcrypto, stock, holdings, price):
     
     # un-comment below when ready to trade on the live market
     
-    print('sell is currently commented')
+    print('SELL IS CURRENTLY COMMENTED')
     
     # sell_order = rh.orders.order_sell_limit(symbol=stock,
     #                                         quantity=holdings,
@@ -82,14 +87,14 @@ def sell(rhcrypto, stock, holdings, price):
     sell_order_info = rhcrypto.trade(
         pair=stock,
         price=round(price, 2),
-        quantity="holdings",
+        quantity=holdings,
         side="buy",
         time_in_force="gtc",
         type="limit"
     )
     """
 
-    print('### Trying to SELL {} amount of {} at ${}'.format(holdings, stock, price))
+    print('### Trying to SELL {} amount of {} at ${} totaling +${}'.format(holdings, stock, price, round(holdings * price, 2)))
     
     #return sell_order_info
 
@@ -98,7 +103,7 @@ def buy(rhcrypto, stock, allowable_holdings, price):
     
     # un-comment below when ready to trade on the live market
     
-    print('buy is currently commented')
+    print('BUY IS CURRENTLY COMMENTED')
     
     # buy_order = rh.orders.order_buy_limit(symbol=stock,
     #                                       quantity=allowable_holdings,
@@ -115,7 +120,7 @@ def buy(rhcrypto, stock, allowable_holdings, price):
     )
     """
 
-    print('### Trying to BUY {} of {} at ${}'.format(allowable_holdings, stock, price))
+    print('### Trying to BUY {} of {} at ${} totaling -${}'.format(allowable_holdings, stock, price, round(allowable_holdings * price, 2)))
 
     #return buy_order_info
 
@@ -128,32 +133,10 @@ def build_dataframes(df_trades, trade_dict, df_prices, price_dict):
     
     return(df_trades, df_prices)
 
-def display_time(seconds, granularity=5):
-    result = []
-    
-    intervals = (
-    ('weeks', 604800),  # 60 * 60 * 24 * 7
-    ('days', 86400),    # 60 * 60 * 24
-    ('hours', 3600),    # 60 * 60
-    ('minutes', 60),
-    ('seconds', 1),
-    )
-
-    for name, count in intervals:
-        value = seconds // count
-        if value:
-            seconds -= value * count
-            if value == 1:
-                name = name.rstrip('s')
-            result.append("{} {}".format(value, name))
-    
-    
-    return ', '.join(result[:granularity])
-
 def display_holdings(holdings):
     for crypto, amount in holdings.items():
         
-        print('\t' + crypto + ' ' + str(amount))
+        print('\t' + crypto + ' ' + str(amount) + " at $" + str(rh.get_crypto_quote(crypto)['mark_price']))
 
 def get_crypto_holdings_capital(rhcrypto, holdings):
     capital = 0
@@ -165,7 +148,22 @@ def get_crypto_holdings_capital(rhcrypto, holdings):
 
 if __name__ == "__main__":
     login()
-
+    
+    export_orders = input("Export a CSV of completed crypto orders when finished? (True or False): ")
+    
+    while export_orders != "True" and export_orders != "False":
+        export_orders = input("Export a CSV of completed crypto orders when finished? (True or False): ")
+        
+    if export_orders == "True":
+        export_orders = True
+    else:
+        export_orders = False
+    
+    mode = input("Select trader setting ('LIVE', 'BACKTEST', or 'SAFE-LIVE'): ")
+    
+    while mode != 'LIVE' and mode != 'BACKTEST' and mode != 'SAFE-LIVE':
+        mode = input("Select trader setting ('LIVE', 'BACKTEST', or 'SAFE-LIVE'): ")
+    
     rhcrypto = RobinhoodCrypto(config.USERNAME, config.PASSWORD)
     
     stocks = config.CRYPTO
@@ -198,18 +196,18 @@ if __name__ == "__main__":
         
         tr.set_profit(cash + get_crypto_holdings_capital(rhcrypto, holdings) - initial_capital)
         
-        print("==========================================")
-        print("runtime: " + display_time(tr.get_runtime()))
+        print("======================" + mode + "======================")
+        print("runtime: " + tr.display_time(tr.get_runtime()))
+        
+        print("total equity: $" + str(equity))
         
         print('crypto holdings:')
         display_holdings(holdings)
         
-        print("equity: $" + str(equity))
+        print("total crypto equity: $" + str(get_crypto_holdings_capital(rhcrypto, holdings)))
         print("cash: $" + str(cash))
         
-        print("profit: ", end="")
-        tr.display_profit()
-        print("\n", end='')
+        print("profit: " + tr.display_profit())
 
         for i, stock in enumerate(stocks):
             
@@ -217,7 +215,7 @@ if __name__ == "__main__":
             
             print('\n{} = ${}'.format(stock, price))
 
-            trade = tr.trade_option(rhcrypto, stock, price)
+            trade = tr.trade_option(stock)
             
             print('trade:', trade, end='\n\n')
             
@@ -249,7 +247,11 @@ if __name__ == "__main__":
         
         print('\ndf_prices \n', df_prices, end='\n\n')
         print('df_trades \n', df_trades, end='\n\n')
-
-        time.sleep(30)
+        
+        print("Waiting " + str(tr.get_interval_sec()) + ' seconds...')
+        time.sleep(tr.get_interval_sec())
 
     logout()
+    
+    if export_orders:
+        rh.export.export_completed_crypto_orders('./', 'completed_crypto_orders')
