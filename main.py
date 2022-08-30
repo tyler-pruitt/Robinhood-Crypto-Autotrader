@@ -67,7 +67,9 @@ if __name__ == "__main__":
     else:
         export_orders = False
     
-    rhcrypto = RobinhoodCrypto(config.USERNAME, config.PASSWORD)
+    mode = input("Select trader setting ('LIVE', 'BACKTEST', or 'SAFE-LIVE'): ")
+    
+    rhcrypto = RobinhoodCrypto(config.USERNAME, config.PASSWORD, mode=mode)
     
     stocks = config.CRYPTO
     

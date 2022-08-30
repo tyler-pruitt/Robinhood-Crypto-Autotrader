@@ -99,11 +99,11 @@ class RobinhoodCrypto():
         "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36",
     }
 
-    def __init__(self, username='', password='', access_token=''):
-        self.mode = input("Select trader setting ('LIVE', 'BACKTEST', or 'SAFE-LIVE'): ")
-    
-        while self.mode != 'LIVE' and self.mode != 'BACKTEST' and self.mode != 'SAFE-LIVE':
-            self.mode = input("Select trader setting ('LIVE', 'BACKTEST', or 'SAFE-LIVE'): ")
+    def __init__(self, username='', password='', access_token='', mode='SAFE-LIVE'):
+        self.mode = mode
+        
+        available_modes = ['LIVE', 'BACKTEST', 'SAFE-LIVE']
+        assert self.mode in available_modes
         
         if self.mode == 'LIVE':
             self.is_live = True
