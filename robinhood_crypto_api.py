@@ -99,8 +99,11 @@ class RobinhoodCrypto():
         "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36",
     }
 
-    def __init__(self, mode, username='', password='', access_token=''):
-        self.mode = mode
+    def __init__(self, username='', password='', access_token=''):
+        self.mode = input("Select trader setting ('LIVE', 'BACKTEST', or 'SAFE-LIVE'): ")
+    
+        while self.mode != 'LIVE' and self.mode != 'BACKTEST' and self.mode != 'SAFE-LIVE':
+            self.mode = input("Select trader setting ('LIVE', 'BACKTEST', or 'SAFE-LIVE'): ")
         
         if self.mode == 'LIVE':
             self.is_live = True
@@ -118,6 +121,12 @@ class RobinhoodCrypto():
             _access_token = self.get_access_token(self.username, self.password)
         
         self.setup_for_api_call(_access_token)
+    
+    def get_mode(self):
+        return self.mode
+    
+    def get_is_live(self):
+        return self.is_live
 
     def setup_for_api_call(self, access_token):
         self._api_session = requests.session()
@@ -324,6 +333,43 @@ class RobinhoodCrypto():
             raise TradeException()
         
         return res
+    
+    # https://github.com/wang-ye/robinhood-crypto/issues/9
+    def buy(self, stock, allowable_holdings, price):
+        # buy_price = round((price + 0.10), 2)
+        
+        # buy_order = rh.orders.order_buy_limit(symbol=stock,
+        #                                       quantity=allowable_holdings,
+        #                                       limitPrice=buy_price,
+        #                                       timeInForce='gfd')
+        
+        print('### Trying to BUY {} of {} at ${} totaling -${}'.format(allowable_holdings, stock, price, round(allowable_holdings * price, 2)))
+        
+        if self.is_live:
+            buy_order_info = self.trade(pair=stock, price=round(price, 2), quantity=allowable_holdings, side="buy", time_in_force="gtc", type="limit")
+            
+            return buy_order_info
+        else:
+            return {}
+    
+    # https://github.com/wang-ye/robinhood-crypto/issues/9
+    def sell(self, stock, holdings, price):
+        # sell_price = round(price - 0.10, 2)
+        
+        # sell_order = rh.orders.order_sell_limit(symbol=stock,
+        #                                         quantity=holdings,
+        #                                         limitPrice=sell_price,
+        #                                         timeInForce='gfd')
+        
+        print('### Trying to SELL {} amount of {} at ${} totaling +${}'.format(holdings, stock, price, round(holdings * price, 2)))
+        
+        if self.is_live:
+            
+            sell_order_info = self.trade(pair=stock, price=round(price, 2), quantity=holdings, side="sell", time_in_force="gtc", type="limit")
+            
+            return sell_order_info()
+        else:
+            return {}
 
     # TODO(ye): implement pagination.
     def trade_history(self):
@@ -495,3 +541,29 @@ class RobinhoodCrypto():
             raise e
         
         return res
+    
+    def get_holdings_and_bought_price(self, stocks):
+        # rh.get_crypto_positions()
+        
+        holdings = {stocks[i]: 0 for i in range(0, len(stocks))}
+        bought_price = {stocks[i]: 0 for i in range(0, len(stocks))}
+        
+        rh_holdings = self.build_holdings()
+    
+        for stock in stocks:
+            try:
+                holdings[stock] = float(rh_holdings[stock]['quantity'])
+                bought_price[stock] = float(rh_holdings[stock]['average_buy_price'])
+            except:
+                holdings[stock] = 0
+                bought_price[stock] = 0
+    
+        return(holdings, bought_price)
+    
+    def get_crypto_holdings_capital(self, holdings):
+        capital = 0
+        
+        for crypto_name, crypto_amount in holdings.items():
+            capital += crypto_amount * float(self.get_latest_price([crypto_name])[0])
+            
+        return capital

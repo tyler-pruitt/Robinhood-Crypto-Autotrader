@@ -40,64 +40,6 @@ def get_cash():
     
     return(cash, equity)
 
-# NEEDS TO BE FIXED
-def get_holdings_and_bought_price(rhcrypto, stocks):
-    # rh.get_crypto_positions()
-    
-    holdings = {stocks[i]: 0 for i in range(0, len(stocks))}
-    bought_price = {stocks[i]: 0 for i in range(0, len(stocks))}
-    
-    rh_holdings = rhcrypto.build_holdings()
-
-    for stock in stocks:
-        try:
-            holdings[stock] = float(rh_holdings[stock]['quantity'])
-            bought_price[stock] = float(rh_holdings[stock]['average_buy_price'])
-        except:
-            holdings[stock] = 0
-            bought_price[stock] = 0
-
-    return(holdings, bought_price)
-
-# NEEDS TO BE FIXED
-# https://github.com/wang-ye/robinhood-crypto/issues/9
-def sell(rhcrypto, stock, holdings, price, is_live):
-    # sell_price = round(price - 0.10, 2)
-    
-    # sell_order = rh.orders.order_sell_limit(symbol=stock,
-    #                                         quantity=holdings,
-    #                                         limitPrice=sell_price,
-    #                                         timeInForce='gfd')
-    
-    if is_live:
-        
-        sell_order_info = rhcrypto.trade(pair=stock, price=round(price, 2), quantity=holdings, side="sell", time_in_force="gtc", type="limit")
-        
-        print('### Trying to SELL {} amount of {} at ${} totaling +${}'.format(holdings, stock, price, round(holdings * price, 2)))
-        
-        return sell_order_info()
-    else:
-        print('### Trying to SELL {} amount of {} at ${} totaling +${}'.format(holdings, stock, price, round(holdings * price, 2)))
-
-# NEEDS TO BE FIXED
-# https://github.com/wang-ye/robinhood-crypto/issues/9
-def buy(rhcrypto, stock, allowable_holdings, price, is_live):
-    # buy_price = round((price + 0.10), 2)
-    
-    # buy_order = rh.orders.order_buy_limit(symbol=stock,
-    #                                       quantity=allowable_holdings,
-    #                                       limitPrice=buy_price,
-    #                                       timeInForce='gfd')
-    
-    if is_live:
-        buy_order_info = rhcrypto.trade(pair=stock, price=round(price, 2), quantity=allowable_holdings, side="buy", time_in_force="gtc", type="limit")
-        
-        print('### Trying to BUY {} of {} at ${} totaling -${}'.format(allowable_holdings, stock, price, round(allowable_holdings * price, 2)))
-        
-        return buy_order_info
-    else:
-        print('### Trying to BUY {} of {} at ${} totaling -${}'.format(allowable_holdings, stock, price, round(allowable_holdings * price, 2)))
-
 def build_dataframes(df_trades, trade_dict, df_prices, price_dict):
     time_now = str(dt.datetime.now().time())[:8]
     
@@ -112,15 +54,6 @@ def display_holdings(holdings):
         
         print('\t' + crypto + ' ' + str(amount) + " at $" + str(rh.get_crypto_quote(crypto)['mark_price']))
 
-# NEEDS TO BE FIXED
-def get_crypto_holdings_capital(rhcrypto, holdings):
-    capital = 0
-    
-    for crypto_name, crypto_amount in holdings.items():
-        capital += crypto_amount * float(rhcrypto.get_latest_price([crypto_name])[0])
-        
-    return capital
-
 if __name__ == "__main__":
     login()
     
@@ -133,16 +66,6 @@ if __name__ == "__main__":
         export_orders = True
     else:
         export_orders = False
-    
-    mode = input("Select trader setting ('LIVE', 'BACKTEST', or 'SAFE-LIVE'): ")
-    
-    while mode != 'LIVE' and mode != 'BACKTEST' and mode != 'SAFE-LIVE':
-        mode = input("Select trader setting ('LIVE', 'BACKTEST', or 'SAFE-LIVE'): ")
-    
-    if mode == 'LIVE':
-        is_live = True
-    else:
-        is_live = False
     
     rhcrypto = RobinhoodCrypto(config.USERNAME, config.PASSWORD)
     
@@ -165,18 +88,18 @@ if __name__ == "__main__":
     while tr.continue_trading():
         prices = rhcrypto.get_latest_price(stocks)
         
-        holdings, bought_price = get_holdings_and_bought_price(rhcrypto, stocks)
+        holdings, bought_price = rhcrypto.get_holdings_and_bought_price(stocks)
         
         cash, equity = get_cash()
         
         if inital_capital_is_init == False:
-            initial_capital = get_crypto_holdings_capital(rhcrypto, holdings) + cash
+            initial_capital = rhcrypto.get_crypto_holdings_capital(holdings) + cash
             
             inital_capital_is_init = True
         
-        tr.set_profit(cash + get_crypto_holdings_capital(rhcrypto, holdings) - initial_capital)
+        tr.set_profit(cash + rhcrypto.get_crypto_holdings_capital(holdings) - initial_capital)
         
-        print("======================" + mode + "======================")
+        print("======================" + rhcrypto.get_mode() + "======================")
         print("runtime: " + tr.display_time(tr.get_runtime()))
         
         print("total equity: $" + str(equity))
@@ -184,7 +107,7 @@ if __name__ == "__main__":
         print('crypto holdings:')
         display_holdings(holdings)
         
-        print("total crypto equity: $" + str(get_crypto_holdings_capital(rhcrypto, holdings)))
+        print("total crypto equity: $" + str(rhcrypto.get_crypto_holdings_capital(holdings)))
         print("cash: $" + str(cash))
         
         print("profit: " + tr.display_profit())
@@ -204,7 +127,7 @@ if __name__ == "__main__":
                 
                 if allowable_holdings > 0:
                     
-                    buy(rhcrypto, stock, allowable_holdings, price, is_live)
+                    rhcrypto.buy(stock, allowable_holdings, price)
 
                 else:
                     print("Not enough allowable holdings")
@@ -213,7 +136,7 @@ if __name__ == "__main__":
             elif trade == "SELL":
                 if holdings[stock] > 0:
 
-                    sell(rhcrypto, stock, holdings[stock], price, is_live)
+                    rhcrypto.sell(stock, holdings[stock], price)
                 else:
                     print("Not enough holdings")
 
@@ -228,7 +151,7 @@ if __name__ == "__main__":
         print('\ndf_prices \n', df_prices, end='\n\n')
         print('df_trades \n', df_trades, end='\n\n')
         
-        print("Waiting " + str(tr.get_interval_sec()) + ' seconds...')
+        print("Waiting " + str(tr.get_interval_sec()) + ' seconds...', end='\n\n')
         time.sleep(tr.get_interval_sec())
 
     logout()
