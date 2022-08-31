@@ -31,8 +31,8 @@ class Trader():
         self.oversold = 30
         self.overbought = 70
         
-        self.interval = "15second"
-        self.span = "hour"
+        self.interval = "5minute"
+        self.span = "day"
         
         self.profit = 0.0
         

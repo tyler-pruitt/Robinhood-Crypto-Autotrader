@@ -127,7 +127,7 @@ if __name__ == "__main__":
             print('trade:', trade, end='\n\n')
             
             if trade == "BUY":
-                allowable_holdings = (cash / 10) / price
+                allowable_holdings = (cash / 4) / price
                 
                 if allowable_holdings > 0:
                     
