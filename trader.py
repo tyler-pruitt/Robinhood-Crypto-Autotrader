@@ -3,7 +3,11 @@ import pandas as pd
 import datetime as dt
 import time
 import matplotlib.pyplot as plt
+import matplotlib.dates as dates
 import warnings
+#import pandas_ta as ta
+
+from indicators import MA, EMA, RSI, MACD
 
 import robin_stocks.robinhood as rh
 import robin_stocks.helper as helper
@@ -23,13 +27,29 @@ class Trader():
         # Loss threshold taken to be a positive value
         self.loss_threshold = abs(5.00)
         
-        self.interval = "5minute"
-        self.span = "day"
+        # RSI overbought and oversold thresholds
+        self.oversold = 30
+        self.overbought = 70
+        
+        self.interval = "15second"
+        self.span = "hour"
         
         self.profit = 0.0
         
-        self.trade = "NA"
-        self.previous_trade = "NA"
+        self.trade = ''
+        self.previous_trade = ''
+    
+    def get_overbought_threshold(self):
+        return self.overbought
+    
+    def get_oversold_threshold(self):
+        return self.oversold
+    
+    def set_overbought_threshold(self, threshold):
+        self.overbought = threshold
+    
+    def set_oversold_threshold(self, threshold):
+        self.oversold = threshold
     
     def __repr__(self):
         return "Trader(crypto: " + str(self.stocks) + ", profit: " + self.display_profit() + ", runtime: " + self.display_time(self.get_runtime()) + ")"
@@ -177,43 +197,25 @@ class Trader():
     def set_previous_time(self, stock, time):
         self.previous_time[self.stocks.index(stock)] = time
     
-    def plot_model(self, stock, df, window, degree, coefficients, pause=1):
-        # df is df_historical_prices
-        stock_prices = []
+    def get_historical_data(self, stock, interval, span):
+        historical_data = rh.crypto.get_crypto_historicals(stock, interval=interval, span=span, bounds='24_7')
         
-        stock_data = df.to_numpy()
+        # df contains all the data (eg. time, open, close, high, low, volume, session, interpolated, symbol)
+        df = pd.DataFrame(historical_data)
         
-        for i in range(len(stock_data) - window, len(stock_data)):
-            stock_prices.append(stock_data[i][0])
+        return df
+    
+    def get_historical_times(self, stock, interval, span):
+        # df contains all the data (eg. time, open, close, high, low)
+        df = self.get_historical_data(stock, interval, span)
         
-        times = list(range(len(stock_prices)))
+        dates_times = pd.to_datetime(df.loc[:, 'begins_at'])
         
-        plt.figure(clear=True)
-        plt.plot(times, stock_prices, 'k-')
-        
-        model_output = []
-        
-        for instance in times:
-            model_output.append(np.polyval(coefficients, instance))
-        
-        plt.plot(times, model_output, 'b-')
-        
-        title = stock + " vs. Model: deg:" + str(degree) + ", window:" + str(window) + ", interval:" + self.interval + ", span:" + self.span
-        
-        plt.title(title)
-        plt.ylabel("Price ($)")
-        plt.xlabel("Time (" + self.interval + ")")
-        plt.legend([stock, "model"], loc="upper left")
-        plt.draw()
-        plt.pause(pause)
+        return dates_times
 
     def get_historical_prices(self, stock, interval, span):
-        span_interval = {'day': '5minute', 'week': '10minute', 'month': 'hour', '3month': 'hour', 'year': 'day', '5year': 'week'}
-        #interval = span_interval[span]
-        
-        historical_data = rh.crypto.get_crypto_historicals(stock, interval=interval, span=span, bounds='24_7')
-
-        df = pd.DataFrame(historical_data)
+        # df contains all the data (eg. time, open, close, high, low)
+        df = self.get_historical_data(stock, interval, span)
 
         dates_times = pd.to_datetime(df.loc[:, 'begins_at'])
         close_prices = df.loc[:, 'close_price'].astype('float')
@@ -224,26 +226,18 @@ class Trader():
 
         return df_price
     
-    def poly_fit(self, market_data, window, degree):
+    def convert_dataframe_to_list(self, df, is_nested=False):
+        df = df.to_numpy()
         
-        price_data = market_data.to_numpy()
+        data = []
         
-        price = np.zeros(window, float)
+        for i in range(len(df)):
+            if is_nested:
+                data.append(df[i][0])
+            else:
+                data.append(df[i])
         
-        count = 0
-        
-        for i in range(len(price_data) - window, len(price_data)):
-            price[count] = price_data[i][0]
-            count += 1
-        
-        time = list(range(window))
-        
-        # If full is False or is not set to True, keep the line below
-        #warnings.simplefilter('ignore', np.RankWarning)
-        
-        fit_data = np.polynomial.polynomial.polyfit(x=time, y=price, deg=degree, full=True)
-        
-        return fit_data
+        return data
 
     def determine_trade(self, stock):
         
@@ -252,41 +246,49 @@ class Trader():
             df_historical_prices = self.get_historical_prices(stock, interval=self.interval, span=self.span)
             self.set_previous_time(stock, time.time())
         
-        min_resid = float('inf')
-        optimal_coeff, optimal_deg, optimal_window = [], 0, 0
-        
-        for window in range(10, len(df_historical_prices)):
-            for degree in range(3, 11):
-                coeff, fit_data = self.poly_fit(df_historical_prices, window, degree)
-                
-                if fit_data[2][0] < min_resid:
-                    min_resid = fit_data[2][0]
-                    optimal_coeff = list(coeff)
-                    optimal_deg = fit_data[1]
-                    optimal_window = window
-        
-        optimal_coeff.reverse()
-        
-        self.plot_model(stock, df_historical_prices, optimal_window, optimal_deg, optimal_coeff)
-        
-        #print(stock + " optimal polynomial fit:", optimal_coeff)
-        
         # https://pandas.pydata.org/docs/reference/api/pandas.Timestamp.html#pandas.Timestamp
-        #times = list(pd.to_datetime(df_historical_prices.loc[:, 'begins_at']))
+        times = self.convert_dataframe_to_list(self.get_historical_times(stock, self.interval, self.span))
+        prices = self.convert_dataframe_to_list(df_historical_prices, True)
         
-        # Determine the trend of the prices
-        derivative = np.polyder(np.poly1d(optimal_coeff))
+        rsi_data = RSI(times, prices, 14)
         
-        # derivative(optimal_window - 1) is the last index for the times given
-        if derivative(optimal_window - 1) > 0:
-            print(stock + " has a rising behaviour: buy")
+        print("RSI:", rsi_data[-1][1])
+        
+        if rsi_data[-1][1] > self.get_overbought_threshold():
+            rsi_indicator = "SELL"
+        elif rsi_data[-1][1] < self.get_oversold_threshold():
+            rsi_indicator = "BUY"
+        else:
+            rsi_indicator = "HOLD"
+        
+        macd, signal = MACD(times, prices, 12, 26, 9)
+        macd_signal_difference = []
+        
+        for i in range(len(macd)):
+            for j in range(len(signal)):
+                if macd[i][0] == signal[j][0]:
+                    macd_signal_difference.append([signal[j][0], macd[i][1] - signal[j][1]])
+        
+        print("MACD", macd[-1][1])
+        print("signal:", signal[-1][1])
+        print("difference:", macd_signal_difference[-1][1])
+        
+        if macd_signal_difference[-1][1] > 0:
+            macd_signal_indicator = "SELL"
+        elif macd_signal_difference[-1][1] < 0:
+            macd_signal_indicator = "BUY"
+        else:
+            macd_signal_indicator = "HOLD"
+        
+        self.plot_indicator(stock, prices, times, macd, signal, macd_signal_difference, rsi_data)
+        
+        if rsi_indicator == "BUY" and macd_signal_indicator == "BUY":
 
             # If the prediction is that the price will increase, buy
             self.set_previous_trade(self.get_trade())
             
             self.set_trade("BUY")
-        elif derivative(optimal_window - 1) < 0:
-            print(stock + " has a falling behaviour: sell")
+        elif rsi_indicator == "SELL" and macd_signal_indicator == "SELL":
 
             # If the prediction is that the price will decrease, sell
             self.set_previous_trade(self.get_trade())
@@ -298,3 +300,98 @@ class Trader():
             self.set_trade("HOLD")
 
         return self.get_trade()
+    
+    def plot_stock(self, stock, prices, price_times, pause=1):
+        
+        for i in range(len(price_times)):
+            price_times[i] = self.convert_timestamp_to_datetime(price_times[i])
+        
+        plt.figure(clear=True)
+        plt.plot_date(price_times, prices, 'g-')
+        plt.title(stock)
+        plt.ylabel("Price ($)")
+        plt.xlabel("Time")
+        plt.show()
+        plt.pause(pause)
+    
+    def plot_macd_signal(self, stock, macd, signal, pause=1):
+        
+        macd_data, macd_times = [], []
+    
+        for i in range(len(macd)):
+            macd_data.append(macd[i][1])
+            macd_times.append(self.convert_timestamp_to_datetime(macd[i][0]))
+        
+        signal_data, signal_times = [], []
+        
+        for i in range(len(signal)):
+            signal_data.append(signal[i][1])
+            signal_times.append(self.convert_timestamp_to_datetime(signal[i][0]))
+        
+        plt.figure(clear=True)
+        plt.plot_date(macd_times, macd_data, 'b-')
+        plt.plot_date(signal_times, signal_data, 'r-')
+        plt.title(stock)
+        plt.ylabel("MACD vs. Signal")
+        plt.legend(["MACD", "Signal"], loc='upper left')
+        plt.xlabel("Time")
+        plt.show()
+        plt.pause(pause)
+    
+    def plot_macd_signal_difference(self, stock, macd_signal_difference, pause=1):
+        
+        macd_signal_data, macd_signal_times = [], []
+        
+        for i in range(len(macd_signal_difference)):
+            macd_signal_times.append(self.convert_timestamp_to_datetime(macd_signal_difference[i][0]))
+            macd_signal_data.append(macd_signal_difference[i][1])
+        
+        plt.figure(clear=True)
+        plt.plot_date(macd_signal_times, macd_signal_data, 'k-')
+        plt.title(stock)
+        plt.ylabel("MACD - Signal")
+        plt.xlabel("Time")
+        plt.show()
+        plt.pause(pause)
+    
+    def plot_rsi(self, stock, rsi, pause=1):
+        rsi_data, rsi_times = [], []
+        
+        for i in range(len(rsi)):
+            rsi_times.append(self.convert_timestamp_to_datetime(rsi[i][0]))
+            rsi_data.append(rsi[i][1])
+        
+        overbought_line, oversold_line = [], []
+        
+        for i in range(len(rsi_times)):
+            overbought_line.append(self.get_overbought_threshold())
+            oversold_line.append(self.get_oversold_threshold())
+        
+        plt.figure(clear=True)
+        plt.plot_date(rsi_times, rsi_data, 'r-')
+        plt.plot_date(rsi_times, overbought_line, 'k-')
+        plt.plot_date(rsi_times, oversold_line, 'k-')
+        plt.title(stock)
+        plt.ylabel("RSI")
+        plt.xlabel("Time")
+        plt.show()
+        plt.pause(pause)
+    
+    def plot_indicator(self, stock, prices, price_times, macd, signal, macd_signal_difference, rsi, pause=1):
+        self.plot_stock(stock, prices, price_times)
+        self.plot_macd_signal(stock, macd, signal)
+        self.plot_macd_signal_difference(stock, macd_signal_difference)
+        self.plot_rsi(stock, rsi)
+    
+    def convert_timestamp_to_datetime(self, timestamp):
+        string = str(timestamp)[:-6]
+        
+        year = int(string[:4])
+        month = int(string[5:7])
+        day = int(string[8:10])
+        
+        hour = int(string[11:13])
+        minute = int(string[14:16])
+        second = int(string[17:19])
+        
+        return dt.datetime(year, month, day, hour, minute, second)

@@ -25,6 +25,8 @@ def login():
                             scope='internal',
                             by_sms=True,
                             store_session=True)
+    
+    print("robin_stonks.robinhood login successful")
 
 def logout():
     rh.authentication.logout()

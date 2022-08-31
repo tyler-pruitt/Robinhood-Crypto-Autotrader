@@ -121,6 +121,8 @@ class RobinhoodCrypto():
             _access_token = self.get_access_token(self.username, self.password)
         
         self.setup_for_api_call(_access_token)
+        
+        print("robinhood crypto login successful")
     
     def get_mode(self):
         return self.mode
@@ -416,7 +418,7 @@ class RobinhoodCrypto():
         
         return prices
 
-    def historicals(self, pair='BTC', interval='5minute', span='day',  bounds='24_7'):
+    def historicals(self, pair='BTC', interval='15second', span='hour',  bounds='24_7'):
         """
         Return { 'data_points': [{ 'begins_at': '2018-05-07T00:20:00Z', 'open_price': '9636.2650', 'close_price': '9598.4300', 'high_price': '9638.0600', 'low_price': '9594.3700', 'volume': '0.0000', 'session': 'reg', 'interpolated': False }], 'bounds': '24_7', 'interval': '5minute', 'span': 'day', 'symbol': 'BTCUSD', 'id': '3d961844-d360-45fc-989b-f6fca761d511', 'open_price': None, 'open_time': None, 'previous_close_price': None, 'previous_close_time': None }
         :param pair: BTC,ETH
