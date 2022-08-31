@@ -19,10 +19,6 @@ class Trader():
         
         self.start_time = time.time()
         self.previous_time = [time.time()] * len(self.stocks)
-        
-        # Set both buy and sell buffers to 0.1%
-        self.sell_buffer = 0.001
-        self.buy_buffer = 0.001
 
         # Loss threshold taken to be a positive value
         self.loss_threshold = abs(5.00)
@@ -31,8 +27,8 @@ class Trader():
         self.oversold = 30
         self.overbought = 70
         
-        self.interval = "5minute"
-        self.span = "day"
+        self.interval = "15second"
+        self.span = "hour"
         
         self.profit = 0.0
         
@@ -151,7 +147,7 @@ class Trader():
         
         text += currency
 
-        text += str(abs(self.profit))
+        text += str(abs(round(self.profit, 2)))
 
         return text
     
@@ -166,18 +162,6 @@ class Trader():
     
     def get_span(self):
         return self.span
-    
-    def set_sell_buffer(self, buffer):
-        self.sell_buffer = buffer
-    
-    def get_sell_buffer(self):
-        return self.sell_buffer
-    
-    def set_buy_buffer(self, buffer):
-        self.buy_buffer = buffer
-    
-    def get_buy_buffer(self):
-        return self.buy_buffer
     
     def get_stocks(self):
         return self.stocks
@@ -346,8 +330,13 @@ class Trader():
             macd_signal_times.append(self.convert_timestamp_to_datetime(macd_signal_difference[i][0]))
             macd_signal_data.append(macd_signal_difference[i][1])
         
+        zeroLine = []
+        for i in range(len(macd_signal_times)):
+            zeroLine.append(0)
+        
         plt.figure(clear=True)
-        plt.plot_date(macd_signal_times, macd_signal_data, 'k-')
+        plt.plot_date(macd_signal_times, macd_signal_data, 'r-')
+        plt.plot_date(macd_signal_times, zeroLine, 'k--')
         plt.title(stock)
         plt.ylabel("MACD - Signal")
         plt.xlabel("Time")
@@ -369,8 +358,8 @@ class Trader():
         
         plt.figure(clear=True)
         plt.plot_date(rsi_times, rsi_data, 'r-')
-        plt.plot_date(rsi_times, overbought_line, 'k-')
-        plt.plot_date(rsi_times, oversold_line, 'k-')
+        plt.plot_date(rsi_times, overbought_line, 'k--')
+        plt.plot_date(rsi_times, oversold_line, 'k--')
         plt.title(stock)
         plt.ylabel("RSI")
         plt.xlabel("Time")

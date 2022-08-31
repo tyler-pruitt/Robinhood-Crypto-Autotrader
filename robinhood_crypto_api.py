@@ -293,6 +293,7 @@ class RobinhoodCrypto():
         
         return None
     
+    # NEEDS TO BE FIXED
     def trade(self, pair, **kwargs):
         # https://github.com/wang-ye/robinhood-crypto/issues/9
 
@@ -335,43 +336,6 @@ class RobinhoodCrypto():
             raise TradeException()
         
         return res
-    
-    # https://github.com/wang-ye/robinhood-crypto/issues/9
-    def buy(self, stock, allowable_holdings, price):
-        # buy_price = round((price + 0.10), 2)
-        
-        # buy_order = rh.orders.order_buy_limit(symbol=stock,
-        #                                       quantity=allowable_holdings,
-        #                                       limitPrice=buy_price,
-        #                                       timeInForce='gfd')
-        
-        print('### Trying to BUY {} of {} at ${} totaling -${}'.format(allowable_holdings, stock, price, round(allowable_holdings * price, 2)))
-        
-        if self.is_live:
-            buy_order_info = self.trade(pair=stock, price=round(price, 2), quantity=allowable_holdings, side="buy", time_in_force="gtc", type="limit")
-            
-            return buy_order_info
-        else:
-            return {}
-    
-    # https://github.com/wang-ye/robinhood-crypto/issues/9
-    def sell(self, stock, holdings, price):
-        # sell_price = round(price - 0.10, 2)
-        
-        # sell_order = rh.orders.order_sell_limit(symbol=stock,
-        #                                         quantity=holdings,
-        #                                         limitPrice=sell_price,
-        #                                         timeInForce='gfd')
-        
-        print('### Trying to SELL {} amount of {} at ${} totaling +${}'.format(holdings, stock, price, round(holdings * price, 2)))
-        
-        if self.is_live:
-            
-            sell_order_info = self.trade(pair=stock, price=round(price, 2), quantity=holdings, side="sell", time_in_force="gtc", type="limit")
-            
-            return sell_order_info()
-        else:
-            return {}
 
     # TODO(ye): implement pagination.
     def trade_history(self):
@@ -381,11 +345,26 @@ class RobinhoodCrypto():
             raise TradeException()
         
         return res
-
-    # return value:
-    # {
-    # 'account_id': 'abcd', 'cancel_url': None, 'created_at': '2018-04-22T14:07:37.103809-04:00', 'cumulative_quantity': '0.000111860000000000', 'currency_pair_id': '3d961844-d360-45fc-989b-f6fca761d511', 'executions': [{'effective_price': '8948.500000000000000000', 'id': 'hijk', 'quantity': '0.000111860000000000', 'timestamp': '2018-04-22T14:07:37.329000-04:00'}], 'id': 'order_id', 'last_transaction_at': '2018-04-22T14:07:37.329000-04:00', 'price': '9028.670000000000000000', 'quantity': '0.000111860000000000', 'ref_id': 'ref_id', 'side': 'buy', 'state': 'filled', 'time_in_force': 'gtc', 'type': 'market', 'updated_at': '2018-04-22T14:07:38.956584-04:00'
-    # }
+    
+    """
+    Return value:
+    {'account_id': 'abcd',
+     'cancel_url': None,
+     'created_at': '2018-04-22T14:07:37.103809-04:00',
+     'cumulative_quantity': '0.000111860000000000',
+     'currency_pair_id': '3d961844-d360-45fc-989b-f6fca761d511',
+     'executions': [{'effective_price': '8948.500000000000000000', 'id': 'hijk', 'quantity': '0.000111860000000000', 'timestamp': '2018-04-22T14:07:37.329000-04:00'}],
+     'id': 'order_id', 
+     'last_transaction_at': '2018-04-22T14:07:37.329000-04:00', 
+     'price': '9028.670000000000000000',
+     'quantity': '0.000111860000000000',
+     'ref_id': 'ref_id',
+     'side': 'buy',
+     'state': 'filled',
+     'time_in_force': 'gtc',
+     'type': 'market',
+     'updated_at': '2018-04-22T14:07:38.956584-04:00'}
+    """
     def order_status(self, order_id):
         url = RobinhoodCrypto.ENDPOINTS['order_status'].format(order_id)
         

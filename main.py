@@ -88,6 +88,8 @@ if __name__ == "__main__":
     df_prices = pd.DataFrame(columns=stocks)
     
     inital_capital_is_init = False
+    
+    orders = []
 
     while tr.continue_trading():
         prices = rhcrypto.get_latest_price(stocks)
@@ -100,6 +102,8 @@ if __name__ == "__main__":
             initial_capital = rhcrypto.get_crypto_holdings_capital(holdings) + cash
             
             inital_capital_is_init = True
+            
+            assert initial_capital > 0
         
         tr.set_profit(cash + rhcrypto.get_crypto_holdings_capital(holdings) - initial_capital)
         
@@ -127,20 +131,51 @@ if __name__ == "__main__":
             print('trade:', trade, end='\n\n')
             
             if trade == "BUY":
-                allowable_holdings = (cash / 4) / price
+                price = round(float(rhcrypto.get_latest_price([stock])[0]), 2)
                 
-                if allowable_holdings > 0:
+                if cash > 0:
                     
-                    rhcrypto.buy(stock, allowable_holdings, price)
+                    # https://robin-stocks.readthedocs.io/en/latest/robinhood.html#placing-and-cancelling-orders
+                    
+                    dollars_to_sell = cash / 10.0
+                    
+                    print('Trying to BUY ${} of {} at price ${}'.format(dollars_to_sell, stock, price))
+                    
+                    # Limit order by price
+                    #order_info = rh.orders.order_buy_crypto_limit_by_price(symbol=stock, amountInDollars=dollars_to_sell, limitPrice=price, timeInForce='gtc', jsonify=True)
+                    
+                    # Market order
+                    order_info = rh.orders.order_buy_crypto_by_price(symbol=stock, amountInDollars=dollars_to_sell, timeInForce='gtc', jsonify=True)
+                    
+                    orders.append(order_info)
+                    
+                    print(order_info)
 
                 else:
-                    print("Not enough allowable holdings")
+                    print("Not enough cash")
                     
                     trade = "UNABLE TO BUY"
             elif trade == "SELL":
                 if holdings[stock] > 0:
-
-                    rhcrypto.sell(stock, holdings[stock], price)
+                    
+                    # https://robin-stocks.readthedocs.io/en/latest/robinhood.html#placing-and-cancelling-orders
+                    
+                    price = round(float(rhcrypto.get_latest_price([stock])[0]), 2)
+                    
+                    holdings_to_sell = holdings[stock] / 10.0
+                    
+                    print('Trying to SELL {} of {} at price ${} for ${}'.format(holdings_to_sell, stock, price, round(holdings_to_sell * price, 2)))
+                    
+                    # Limit order by price for a set quantity
+                    #order_info = rh.orders.order_sell_crypto_limit(symbol=stock, quantity=holdings_to_sell, limitPrice=price, timeInForce='gtc', jsonify=True)
+                    
+                    # Market order
+                    order_info = rh.orders.order_sell_crypto_by_quantity(symbol=stock, quantity=holdings_to_sell, timeInForce='gtc', jsonify=True)
+                    
+                    orders.append(order_info)
+                    
+                    print(order_info)
+                    
                 else:
                     print("Not enough holdings")
 
