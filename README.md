@@ -1,4 +1,4 @@
-# robinhood-crypto-autotrader
+# Robinhood-Crypto-Autotrader
 An automated trader for crypto on Robinhood
 
 To run the code:
