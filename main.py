@@ -161,40 +161,46 @@ if __name__ == "__main__":
                     if is_live:
                         print("LIVE: Buy order is going through")
 
-                        # Limit order by price
-                        #order_info = rh.orders.order_buy_crypto_limit_by_price(symbol=stock, amountInDollars=dollars_to_sell, limitPrice=price, timeInForce='gtc', jsonify=True)
+                        if len(outgoing_order_queue) == 0:
+                            print("No orders still in queue")
+
+                            # Limit order by price
+                            #order_info = rh.orders.order_buy_crypto_limit_by_price(symbol=stock, amountInDollars=dollars_to_sell, limitPrice=price, timeInForce='gtc', jsonify=True)
+                            
+                            # Market order
+                            """
+                            order_info = {'account_id': 'some_id',
+                            'average_price': 'some_float',
+                            'cancel_url': 'some_url',
+                            'created_at': 'some_time',
+                            'cumulative_quantity': 'some_float',
+                            'currency_pair_id': 'some_id',
+                            'entered_price': 'amount_in_dollars_spent',
+                            'executions': [],
+                            'funding_source_id': None,
+                            'id': 'some_order_id',
+                            'initiator_id': None,
+                            'initiator_type': None,
+                            'is_visible_to_user': True,
+                            'last_transaction_at': None,
+                            'price': 'some_price',
+                            'quantity': 'some_quantity',
+                            'ref_id': 'some_id',
+                            'rounded_executed_notional': 'some_float',
+                            'side': 'buy_or_sell',
+                            'state': 'unconfirmed',
+                            'time_in_force': 'gtc',
+                            'type': 'market',
+                            'updated_at': 'some_time'}
+                            """
+                            order_info = rh.orders.order_buy_crypto_by_price(symbol=stock, amountInDollars=dollars_to_sell, timeInForce='gtc', jsonify=True)
+                            
+                            outgoing_order_queue.append(order_info)
+                            
+                            print("Order info:", order_info)
+                        else:
+                            print("Orders are still in queue: order is canceled")
                         
-                        # Market order
-                        """
-                        order_info = {'account_id': 'some_id',
-                         'average_price': 'some_float',
-                         'cancel_url': 'some_url',
-                         'created_at': 'some_time',
-                         'cumulative_quantity': 'some_float',
-                         'currency_pair_id': 'some_id',
-                         'entered_price': 'amount_in_dollars_spent',
-                         'executions': [],
-                         'funding_source_id': None,
-                         'id': 'some_order_id',
-                         'initiator_id': None,
-                         'initiator_type': None,
-                         'is_visible_to_user': True,
-                         'last_transaction_at': None,
-                         'price': 'some_price',
-                         'quantity': 'some_quantity',
-                         'ref_id': 'some_id',
-                         'rounded_executed_notional': 'some_float',
-                         'side': 'buy_or_sell',
-                         'state': 'unconfirmed',
-                         'time_in_force': 'gtc',
-                         'type': 'market',
-                         'updated_at': 'some_time'}
-                        """
-                        order_info = rh.orders.order_buy_crypto_by_price(symbol=stock, amountInDollars=dollars_to_sell, timeInForce='gtc', jsonify=True)
-                        
-                        outgoing_order_queue.append(order_info)
-                        
-                        print("Order info:", order_info)
                     else:
                         print(mode + ": Buy order is not going through")
 
@@ -216,15 +222,21 @@ if __name__ == "__main__":
                     if is_live:
                         print("LIVE: Sell order is going through")
 
-                        # Limit order by price for a set quantity
-                        #order_info = rh.orders.order_sell_crypto_limit(symbol=stock, quantity=holdings_to_sell, limitPrice=price, timeInForce='gtc', jsonify=True)
+                        if len(outgoing_order_queue) == 0:
+                            print("No orders still in queue")
+
+                            # Limit order by price for a set quantity
+                            #order_info = rh.orders.order_sell_crypto_limit(symbol=stock, quantity=holdings_to_sell, limitPrice=price, timeInForce='gtc', jsonify=True)
+                            
+                            # Market order
+                            order_info = rh.orders.order_sell_crypto_by_quantity(symbol=stock, quantity=holdings_to_sell, timeInForce='gtc', jsonify=True)
+                            
+                            outgoing_order_queue.append(order_info)
+                            
+                            print("Order info:", order_info)
+                        else:
+                            print("Orders are still in queue: order is canceled")
                         
-                        # Market order
-                        order_info = rh.orders.order_sell_crypto_by_quantity(symbol=stock, quantity=holdings_to_sell, timeInForce='gtc', jsonify=True)
-                        
-                        outgoing_order_queue.append(order_info)
-                        
-                        print("Order info:", order_info)
                     else:
                         print(mode + ": Sell order is not going through")
                     

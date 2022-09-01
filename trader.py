@@ -24,8 +24,8 @@ class Trader():
         self.loss_threshold = abs(5.00)
         
         # RSI overbought and oversold thresholds
-        self.oversold = 30
-        self.overbought = 70
+        self.oversold = 25
+        self.overbought = 75
         
         self.interval = "15second"
         self.span = "hour"
