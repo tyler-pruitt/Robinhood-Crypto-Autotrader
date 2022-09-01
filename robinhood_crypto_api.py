@@ -99,17 +99,7 @@ class RobinhoodCrypto():
         "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36",
     }
 
-    def __init__(self, username='', password='', access_token='', mode='SAFE-LIVE'):
-        self.mode = mode
-        
-        available_modes = ['LIVE', 'BACKTEST', 'SAFE-LIVE']
-        assert self.mode in available_modes
-        
-        if self.mode == 'LIVE':
-            self.is_live = True
-        else:
-            self.is_live = False
-        
+    def __init__(self, username='', password='', access_token=''):
         self.username = username
         self.password = password
         
@@ -123,12 +113,6 @@ class RobinhoodCrypto():
         self.setup_for_api_call(_access_token)
         
         print("robinhood crypto login successful")
-    
-    def get_mode(self):
-        return self.mode
-    
-    def get_is_live(self):
-        return self.is_live
 
     def setup_for_api_call(self, access_token):
         self._api_session = requests.session()
@@ -374,6 +358,14 @@ class RobinhoodCrypto():
             raise e
         
         return res
+    
+    def is_order_filled(self, order_id):
+        order_update = self.order_status(order_id)
+        
+        if order_update['state'] == 'filled':
+            return True
+        else:
+            return False
 
     def order_cancel(self, order_id):
         url = RobinhoodCrypto.ENDPOINTS['order_cancel'].format(order_id)

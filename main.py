@@ -70,8 +70,16 @@ if __name__ == "__main__":
         export_orders = False
     
     mode = input("Select trader setting ('LIVE', 'BACKTEST', or 'SAFE-LIVE'): ")
+        
+    available_modes = ['LIVE', 'BACKTEST', 'SAFE-LIVE']
+    assert mode in available_modes
     
-    rhcrypto = RobinhoodCrypto(config.USERNAME, config.PASSWORD, mode=mode)
+    if mode == 'LIVE':
+        is_live = True
+    else:
+        is_live = False
+    
+    rhcrypto = RobinhoodCrypto(config.USERNAME, config.PASSWORD)
     
     stocks = config.CRYPTO
     
@@ -89,9 +97,18 @@ if __name__ == "__main__":
     
     inital_capital_is_init = False
     
-    orders = []
+    outgoing_order_queue, filled_orders = [], []
 
     while tr.continue_trading():
+        
+        if len(outgoing_order_queue) > 0:
+            while len(outgoing_order_queue) > 0:
+                if rhcrypto.is_order_filled(outgoing_order_queue[0]['id']):
+                    filled_orders.append(outgoing_order_queue[0])
+                    outgoing_order_queue.pop(0)
+                else:
+                    break
+        
         prices = rhcrypto.get_latest_price(stocks)
         
         holdings, bought_price = rhcrypto.get_holdings_and_bought_price(stocks)
@@ -107,7 +124,7 @@ if __name__ == "__main__":
         
         tr.set_profit(cash + rhcrypto.get_crypto_holdings_capital(holdings) - initial_capital)
         
-        print("======================" + rhcrypto.get_mode() + "======================")
+        print("======================" + mode + "======================")
         print("runtime: " + tr.display_time(tr.get_runtime()))
         
         print("total equity: $" + str(equity))
@@ -139,17 +156,47 @@ if __name__ == "__main__":
                     
                     dollars_to_sell = cash / 10.0
                     
-                    print('Trying to BUY ${} of {} at price ${}'.format(dollars_to_sell, stock, price))
+                    print('Attempting to BUY ${} of {} at price ${}'.format(dollars_to_sell, stock, price))
                     
-                    # Limit order by price
-                    #order_info = rh.orders.order_buy_crypto_limit_by_price(symbol=stock, amountInDollars=dollars_to_sell, limitPrice=price, timeInForce='gtc', jsonify=True)
-                    
-                    # Market order
-                    order_info = rh.orders.order_buy_crypto_by_price(symbol=stock, amountInDollars=dollars_to_sell, timeInForce='gtc', jsonify=True)
-                    
-                    orders.append(order_info)
-                    
-                    print(order_info)
+                    if is_live:
+                        print("LIVE: Buy order is going through")
+
+                        # Limit order by price
+                        #order_info = rh.orders.order_buy_crypto_limit_by_price(symbol=stock, amountInDollars=dollars_to_sell, limitPrice=price, timeInForce='gtc', jsonify=True)
+                        
+                        # Market order
+                        """
+                        order_info = {'account_id': 'some_id',
+                         'average_price': 'some_float',
+                         'cancel_url': 'some_url',
+                         'created_at': 'some_time',
+                         'cumulative_quantity': 'some_float',
+                         'currency_pair_id': 'some_id',
+                         'entered_price': 'amount_in_dollars_spent',
+                         'executions': [],
+                         'funding_source_id': None,
+                         'id': 'some_order_id',
+                         'initiator_id': None,
+                         'initiator_type': None,
+                         'is_visible_to_user': True,
+                         'last_transaction_at': None,
+                         'price': 'some_price',
+                         'quantity': 'some_quantity',
+                         'ref_id': 'some_id',
+                         'rounded_executed_notional': 'some_float',
+                         'side': 'buy_or_sell',
+                         'state': 'unconfirmed',
+                         'time_in_force': 'gtc',
+                         'type': 'market',
+                         'updated_at': 'some_time'}
+                        """
+                        order_info = rh.orders.order_buy_crypto_by_price(symbol=stock, amountInDollars=dollars_to_sell, timeInForce='gtc', jsonify=True)
+                        
+                        outgoing_order_queue.append(order_info)
+                        
+                        print("Order info:", order_info)
+                    else:
+                        print(mode + ": Buy order is not going through")
 
                 else:
                     print("Not enough cash")
@@ -164,17 +211,22 @@ if __name__ == "__main__":
                     
                     holdings_to_sell = holdings[stock] / 10.0
                     
-                    print('Trying to SELL {} of {} at price ${} for ${}'.format(holdings_to_sell, stock, price, round(holdings_to_sell * price, 2)))
-                    
-                    # Limit order by price for a set quantity
-                    #order_info = rh.orders.order_sell_crypto_limit(symbol=stock, quantity=holdings_to_sell, limitPrice=price, timeInForce='gtc', jsonify=True)
-                    
-                    # Market order
-                    order_info = rh.orders.order_sell_crypto_by_quantity(symbol=stock, quantity=holdings_to_sell, timeInForce='gtc', jsonify=True)
-                    
-                    orders.append(order_info)
-                    
-                    print(order_info)
+                    print('Attempting to SELL {} of {} at price ${} for ${}'.format(holdings_to_sell, stock, price, round(holdings_to_sell * price, 2)))
+
+                    if is_live:
+                        print("LIVE: Sell order is going through")
+
+                        # Limit order by price for a set quantity
+                        #order_info = rh.orders.order_sell_crypto_limit(symbol=stock, quantity=holdings_to_sell, limitPrice=price, timeInForce='gtc', jsonify=True)
+                        
+                        # Market order
+                        order_info = rh.orders.order_sell_crypto_by_quantity(symbol=stock, quantity=holdings_to_sell, timeInForce='gtc', jsonify=True)
+                        
+                        outgoing_order_queue.append(order_info)
+                        
+                        print("Order info:", order_info)
+                    else:
+                        print(mode + ": Sell order is not going through")
                     
                 else:
                     print("Not enough holdings")
