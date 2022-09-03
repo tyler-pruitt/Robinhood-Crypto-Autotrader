@@ -21,6 +21,7 @@ An automated trader for crypto on Robinhood
 - `UNI` for Uniswap
 - `XLM` for Stellar Lumens
 - `AVAX` for Avalanche
+- 'ADA' for Cardano
 
 ### 3. modify "trader.py" to your personal trading strategy (optional)
 ### 4. run "main.py"
