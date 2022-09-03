@@ -162,7 +162,7 @@ if __name__ == "__main__":
                         print("LIVE: Buy order is going through")
 
                         if len(outgoing_order_queue) == 0:
-                            print("No orders still in queue")
+                            print("No orders still in queue: new order will execute")
 
                             # Limit order by price
                             #order_info = rh.orders.order_buy_crypto_limit_by_price(symbol=stock, amountInDollars=dollars_to_sell, limitPrice=price, timeInForce='gtc', jsonify=True)
@@ -223,7 +223,7 @@ if __name__ == "__main__":
                         print("LIVE: Sell order is going through")
 
                         if len(outgoing_order_queue) == 0:
-                            print("No orders still in queue")
+                            print("No orders still in queue: new order will execute")
 
                             # Limit order by price for a set quantity
                             #order_info = rh.orders.order_sell_crypto_limit(symbol=stock, quantity=holdings_to_sell, limitPrice=price, timeInForce='gtc', jsonify=True)
