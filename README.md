@@ -5,6 +5,15 @@ An automated trader for crypto on Robinhood
 ### 1. place all files in the same folder 
 ### 2. place your Robinhood USERNAME, PASSWORD, and CRYPTO to trade in "config.py"
 
+#### You should fill in your information in the file like so
+
+```python
+USERNAME = "Your_username"
+PASSWORD = "Your_password"
+
+CRYPTO = ['BTC', 'ETH']
+```
+
 #### Cryptocurrency options are 
 - `BTC` for Bitcoin
 - `ETH` for Ethereum
