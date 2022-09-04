@@ -11,4 +11,23 @@ EXPORTCSV = False
 MODE = 'SAFE-LIVE'
 
 # The cryptocurrencies to have the autotrader place orders on
+"""
+Available options:
+- 'BTC' for Bitcoin
+- 'ETH' for Ethereum
+- 'ETC' for Ethereum Classic
+- 'BCH' for Bitcoin Cash
+- 'BSV' for Bitcoin SV
+- 'LTC' for Litecoin
+- 'DOGE' for Dogecoin
+- 'SHIB' for Shiba Inu
+- 'SOL' for Solana
+- 'MATIC' for Polygon
+- 'COMP' for Compound
+- 'LINK' for Chainlink
+- 'UNI' for Uniswap
+- 'XLM' for Stellar Lumens
+- 'AVAX' for Avalanche
+- 'ADA' for Cardano
+"""
 CRYPTO = ['BTC']
