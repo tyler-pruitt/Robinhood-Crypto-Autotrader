@@ -12,12 +12,9 @@ from robinhood_crypto_api import RobinhoodCrypto
 # Make sure to take advantage of https://robin-stocks.readthedocs.io/en/latest/robinhood.html#getting-crypto-information
 
 def login():
-    days = int(input("Enter the number of days to run the automated trader (POSITIVE integer > 0): "))
-    
-    while days <= 0:
-        days = int(input("Enter the number of days to run the automated trader (POSITIVE integer > 0): "))
+    assert type(config.TIMEINDAYS) == int and config.TIMEINDAYS >= 1
 
-    time_logged_in = 60 * 60 * 24 * days
+    time_logged_in = 60 * 60 * 24 * config.TIMEINDAYS
     
     rh.authentication.login(username=config.USERNAME,
                             password=config.PASSWORD,
@@ -59,18 +56,7 @@ def display_holdings(holdings):
 if __name__ == "__main__":
     login()
     
-    export_orders = input("Export a CSV of completed crypto orders when finished? (True or False): ")
-    
-    while export_orders != "True" and export_orders != "False":
-        export_orders = input("Export a CSV of completed crypto orders when finished? (True or False): ")
-        
-    if export_orders == "True":
-        export_orders = True
-    else:
-        export_orders = False
-    
-    mode = input("Select trader setting ('LIVE', 'BACKTEST', or 'SAFE-LIVE'): ")
-        
+    mode = config.MODE
     available_modes = ['LIVE', 'BACKTEST', 'SAFE-LIVE']
     assert mode in available_modes
     
@@ -78,6 +64,8 @@ if __name__ == "__main__":
         is_live = True
     else:
         is_live = False
+    
+    assert type(config.EXPORTCSV) == bool
     
     rhcrypto = RobinhoodCrypto(config.USERNAME, config.PASSWORD)
     
@@ -259,5 +247,5 @@ if __name__ == "__main__":
 
     logout()
     
-    if export_orders:
+    if config.EXPORTCSV:
         rh.export.export_completed_crypto_orders('./', 'completed_crypto_orders')
