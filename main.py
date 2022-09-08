@@ -1,5 +1,7 @@
 import config
+import backtest
 import trader
+import order
 
 import robin_stocks.robinhood as rh
 import datetime as dt
@@ -51,7 +53,7 @@ def build_dataframes(df_trades, trade_dict, df_prices, price_dict):
 def display_holdings(holdings):
     for crypto, amount in holdings.items():
         
-        print('\t' + crypto + ' ' + str(amount) + " at $" + str(rh.get_crypto_quote(crypto)['mark_price']))
+        print('\t' + str(amount) + ' ' + crypto + " at $" + str(rh.get_crypto_quote(crypto)['mark_price']))
 
 if __name__ == "__main__":
     login()
@@ -111,6 +113,7 @@ if __name__ == "__main__":
             assert initial_capital > 0
         
         tr.set_profit(cash + rhcrypto.get_crypto_holdings_capital(holdings) - initial_capital)
+        percent_change = tr.get_profit() * 100 / initial_capital
         
         print("======================" + mode + "======================")
         print("runtime: " + tr.display_time(tr.get_runtime()))
@@ -123,7 +126,7 @@ if __name__ == "__main__":
         print("total crypto equity: $" + str(rhcrypto.get_crypto_holdings_capital(holdings)))
         print("cash: $" + str(cash))
         
-        print("profit: " + tr.display_profit())
+        print("profit: " + tr.display_profit() + " (" + tr.display_profit()[0] + str(round(abs(percent_change), 2)) + "%)")
 
         for i, stock in enumerate(stocks):
             
@@ -156,31 +159,6 @@ if __name__ == "__main__":
                             #order_info = rh.orders.order_buy_crypto_limit_by_price(symbol=stock, amountInDollars=dollars_to_sell, limitPrice=price, timeInForce='gtc', jsonify=True)
                             
                             # Market order
-                            """
-                            order_info = {'account_id': 'some_id',
-                            'average_price': 'some_float',
-                            'cancel_url': 'some_url',
-                            'created_at': 'some_time',
-                            'cumulative_quantity': 'some_float',
-                            'currency_pair_id': 'some_id',
-                            'entered_price': 'amount_in_dollars_spent',
-                            'executions': [],
-                            'funding_source_id': None,
-                            'id': 'some_order_id',
-                            'initiator_id': None,
-                            'initiator_type': None,
-                            'is_visible_to_user': True,
-                            'last_transaction_at': None,
-                            'price': 'some_price',
-                            'quantity': 'some_quantity',
-                            'ref_id': 'some_id',
-                            'rounded_executed_notional': 'some_float',
-                            'side': 'buy_or_sell',
-                            'state': 'unconfirmed',
-                            'time_in_force': 'gtc',
-                            'type': 'market',
-                            'updated_at': 'some_time'}
-                            """
                             order_info = rh.orders.order_buy_crypto_by_price(symbol=stock, amountInDollars=dollars_to_sell, timeInForce='gtc', jsonify=True)
                             
                             outgoing_order_queue.append(order_info)
