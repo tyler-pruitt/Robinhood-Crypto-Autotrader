@@ -17,6 +17,9 @@ TIMEINDAYS = 1
 # Export the completed crypto orders into a CSV? (BOOLEAN), must be either True or False
 EXPORTCSV = False
 
+# Plot analytical graphs while running? (BOOLEAN), must be either True or False
+PLOTGRAPH = True
+
 # The mode to run the autotrader, available modes are 'LIVE', 'BACKTEST', and 'SAFE-LIVE'
 MODE = 'SAFE-LIVE'
 
