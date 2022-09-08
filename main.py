@@ -14,8 +14,6 @@ from robinhood_crypto_api import RobinhoodCrypto
 # Make sure to take advantage of https://robin-stocks.readthedocs.io/en/latest/robinhood.html#getting-crypto-information
 
 def login():
-    assert type(config.TIMEINDAYS) == int and config.TIMEINDAYS >= 1
-
     time_logged_in = 60 * 60 * 24 * config.TIMEINDAYS
     
     rh.authentication.login(username=config.USERNAME,
@@ -56,6 +54,11 @@ def display_holdings(holdings):
         print('\t' + str(amount) + ' ' + crypto + " at $" + str(rh.get_crypto_quote(crypto)['mark_price']))
 
 if __name__ == "__main__":
+    assert type(config.TIMEINDAYS) == int and config.TIMEINDAYS >= 1
+
+    assert type(config.USERNAME) == str and type(config.PASSWORD) == str
+    assert len(config.USERNAME) > 0 and len(config.PASSWORD) > 0
+    
     login()
     
     mode = config.MODE
@@ -68,6 +71,10 @@ if __name__ == "__main__":
         is_live = False
     
     assert type(config.EXPORTCSV) == bool
+
+    assert type(config.PLOTGRAPH) == bool
+
+    assert type(config.CRYPTO) == list and len(config.CRYPTO) > 0
     
     rhcrypto = RobinhoodCrypto(config.USERNAME, config.PASSWORD)
     

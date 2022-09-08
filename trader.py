@@ -7,6 +7,7 @@ import matplotlib.dates as dates
 import warnings
 #import pandas_ta as ta
 
+import config
 from indicators import MA, EMA, RSI, MACD
 
 import robin_stocks.robinhood as rh
@@ -264,7 +265,8 @@ class Trader():
         else:
             macd_signal_indicator = "HOLD"
         
-        self.plot_indicator(stock, prices, times, macd, signal, macd_signal_difference, rsi_data)
+        if config.PLOTGRAPH:
+            self.plot_indicator(stock, prices, times, macd, signal, macd_signal_difference, rsi_data)
         
         if rsi_indicator == "BUY" and macd_signal_indicator == "BUY":
 
