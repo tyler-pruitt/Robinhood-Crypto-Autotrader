@@ -1,5 +1,4 @@
 import config
-import backtest
 import trader
 import order
 
