@@ -23,6 +23,12 @@ PLOTGRAPH = True
 # The mode to run the autotrader, available modes are 'LIVE', 'BACKTEST', and 'SAFE-LIVE'
 MODE = 'SAFE-LIVE'
 
+# Initial capital to start the backtesting with (optional: only for 'BACKTEST' mode)
+CASH = 100.00
+
+# File path to CSV of market data (optional: only for 'BACKTEST' mode)
+PATHTODATA = ''
+
 # The cryptocurrencies to have the autotrader place orders on
 CRYPTO = ['BTC', 'ETH']
 ```
