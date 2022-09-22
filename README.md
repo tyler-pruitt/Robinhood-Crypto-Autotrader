@@ -50,6 +50,7 @@ CRYPTO = ['BTC', 'ETH']
 - `XLM` for Stellar Lumens
 - `AVAX` for Avalanche
 - `ADA` for Cardano
+- `USDC` for USD Coin
 
 ### 3. modify "trader.py" to your personal trading strategy (optional)
 ### 4. run "main.py"
