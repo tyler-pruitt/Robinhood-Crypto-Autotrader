@@ -56,7 +56,7 @@ def reauth(f):
 
 
 class RobinhoodCrypto():
-    # Implemented all tradable cryptos into PAIRS (August 20, 2022)
+    # Implemented all tradable cryptos into PAIRS (September 21, 2022)
     # Use rh.crypto.get_crypto_id('BTC') for PAIRS
     PAIRS = {
         'BTC': '3d961844-d360-45fc-989b-f6fca761d511',
@@ -74,7 +74,8 @@ class RobinhoodCrypto():
         'UNI': '33316259-af8c-4f31-86a4-c5c07e12d625',
         'XLM': '7a04fe7a-e3a8-4a07-8c35-d0fec9f35569',
         'AVAX': 'f62a25b6-31c0-4c92-846d-3c8105627b62',
-        'ADA': '6f2afc32-702e-41ad-b232-ed26b77c1943'
+        'ADA': '6f2afc32-702e-41ad-b232-ed26b77c1943',
+        'USDC': '3a3d9131-b627-4782-95e6-aeb874558e99'
     }
 
     ENDPOINTS = {
