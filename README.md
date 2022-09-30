@@ -56,5 +56,5 @@ CRYPTO = ['BTC', 'ETH']
 - `ADA` for Cardano
 - `USDC` for USD Coin
 
-### 3. modify "trader.py" to your personal trading strategy (optional)
+### 3. modify the Trader class in "trader.py" to your personal trading strategy (optional)
 ### 4. run "main.py"
