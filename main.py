@@ -224,15 +224,14 @@ if __name__ == "__main__":
 
     while tr.continue_trading():
         try:
-            if len(outgoing_order_queue) > 0:
-                while len(outgoing_order_queue) > 0:
-                    if is_order_filled(outgoing_order_queue[0]['id']):
-                        
-                        filled_orders.append(outgoing_order_queue[0])
-                        
-                        outgoing_order_queue.pop(0)
-                    else:
-                        break
+            while len(outgoing_order_queue) > 0:
+                if is_order_filled(outgoing_order_queue[0]['id']):
+
+                    filled_orders.append(outgoing_order_queue[0])
+
+                    outgoing_order_queue.pop(0)
+                else:
+                    break
             
             prices = get_latest_price(stocks)
             
