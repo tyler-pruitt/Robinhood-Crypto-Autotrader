@@ -83,6 +83,6 @@ class Order():
         self.updated_at = order_info['updated_at']
     
     def cancel():
-        updated_order_info = rh.cancel_crypto_order(self.id)
+        updated_order_info = rh.orders.cancel_crypto_order(self.id)
         
         self.update(updated_order_info)
