@@ -57,8 +57,9 @@ class Order():
         self.type = order_info['type']
         self.updated_at = order_info['updated_at']
     
-    def update(self, new_order_info):
-        assert new_order_info['id'] == self.id
+    def update(self):
+        
+        new_order_info = rh.orders.get_crypto_order_info(self.id)
         
         self.account_id = new_order_info['account_id']
         self.average_price = new_order_info['average_price']
