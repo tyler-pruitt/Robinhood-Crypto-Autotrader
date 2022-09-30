@@ -1,6 +1,7 @@
 USERNAME = "Your_Robinhood_Username"
 PASSWORD = "Your_Robinhood_Password"
 
+
 # The number of days to run the autotrader (INTEGER), must be greater than zero (0)
 TIMEINDAYS = 1
 

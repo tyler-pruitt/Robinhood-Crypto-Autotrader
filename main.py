@@ -8,8 +8,6 @@ import time
 import pandas as pd
 import numpy as np
 
-from robinhood_crypto_api import RobinhoodCrypto
-
 # Make sure to take advantage of https://robin-stocks.readthedocs.io/en/latest/robinhood.html#getting-crypto-information
 
 def login():
@@ -22,7 +20,7 @@ def login():
                             by_sms=True,
                             store_session=True)
     
-    print("robin_stonks.robinhood login successful")
+    print("login successful")
 
 def logout():
     rh.authentication.logout()
@@ -47,12 +45,90 @@ def build_dataframes(df_trades, trade_dict, df_prices, price_dict):
     
     return(df_trades, df_prices)
 
+def get_crypto_holdings_capital(holdings):
+    capital = 0
+        
+    for crypto_name, crypto_amount in holdings.items():
+        capital += crypto_amount * float(get_latest_price([crypto_name])[0])
+        
+    return capital
+
+def is_order_filled(order_id):
+    order_update = rh.orders.get_crypto_order_info(order_id)
+    
+    if order_update['state'] == 'filled':
+        return True
+    else:
+        return False
+
+def get_latest_price(stocks):
+    """
+    Returns: list of prices
+    """
+    
+    prices = []
+    
+    for i in range(len(stocks)):
+        prices.append(rh.crypto.get_crypto_quote(stocks[i])['mark_price'])
+    
+    return prices
+
+def build_holdings():
+    """
+    Returns {
+        'stock1': {
+            'price': '76.24',
+            'quantity': '2.00',
+            'average_buy_price': '79.26',
+            },
+        'stock2': {
+            'price': '76.24',
+            'quantity': '2.00',
+            'average_buy_price': '79.26',
+            }}
+    """
+    
+    holdings_data = rh.crypto.get_crypto_positions()
+    
+    build_holdings_data = dict()
+    
+    for i in range(len(holdings_data)):
+        nested_data = dict()
+        
+        nested_data['price'] = get_latest_price([holdings_data[i]["currency"]["code"]])
+        nested_data['quantity'] = holdings_data[i]["quantity"]
+        
+        try:
+            nested_data['average_buy_price'] = str(float(holdings_data[i]["cost_bases"][0]["direct_cost_basis"]) / float(nested_data["quantity"]))
+        except ZeroDivisionError:
+            nested_data['average_buy_price'] = '-'
+        
+        build_holdings_data[holdings_data[i]["currency"]["code"]] = nested_data
+    
+    return build_holdings_data
+
+def get_holdings_and_bought_price(stocks):
+    holdings = {stocks[i]: 0 for i in range(0, len(stocks))}
+    bought_price = {stocks[i]: 0 for i in range(0, len(stocks))}
+    
+    rh_holdings = build_holdings()
+
+    for stock in stocks:
+        try:
+            holdings[stock] = float(rh_holdings[stock]['quantity'])
+            bought_price[stock] = float(rh_holdings[stock]['average_buy_price'])
+        except:
+            holdings[stock] = 0
+            bought_price[stock] = 0
+
+    return holdings, bought_price
+
 def display_holdings(holdings):
     for crypto, amount in holdings.items():
         
         print('\t' + str(amount) + ' ' + crypto + " at $" + str(rh.get_crypto_quote(crypto)['mark_price']))
 
-def update_output(mode, tr, equity, holdings, rhcrypto, cash, percent_change):
+def update_output(mode, tr, equity, holdings, cash, percent_change):
     """
     Prints out the lastest information out to consol
     """
@@ -65,9 +141,9 @@ def update_output(mode, tr, equity, holdings, rhcrypto, cash, percent_change):
     print('crypto holdings:')
     display_holdings(holdings)
     
-    print("total crypto equity: $" + str(rhcrypto.get_crypto_holdings_capital(holdings)))
+    print("total crypto equity: $" + str(get_crypto_holdings_capital(holdings)))
     print("cash: $" + str(cash))
-    print("total crypto equity and cash: $" + str(cash + rhcrypto.get_crypto_holdings_capital(holdings)))
+    print("total crypto equity and cash: $" + str(cash + get_crypto_holdings_capital(holdings)))
     
     print("profit: " + tr.display_profit() + " (" + tr.display_profit()[0] + str(round(abs(percent_change), 2)) + "%)")
 
@@ -113,8 +189,6 @@ if __name__ == "__main__":
     else:
         is_live = False
     
-    rhcrypto = RobinhoodCrypto(config.USERNAME, config.PASSWORD)
-    
     stocks = config.CRYPTO
     
     print('cryptos:', stocks)
@@ -130,12 +204,13 @@ if __name__ == "__main__":
     df_prices = pd.DataFrame(columns=stocks)
     
     # Initialization of holdings and bought price (necessary to be here due to different modes and cash initializations)
-    holdings, bought_price = rhcrypto.get_holdings_and_bought_price(stocks)
+    holdings, bought_price = get_holdings_and_bought_price(stocks)
     
     # Initialization of initial_capital and cash (if necessary)
     # This initialization needs to be here due to different modes and cash initializations
     if config.CASHFORSAFELIVE == False or is_live:
-        initial_capital = rhcrypto.get_crypto_holdings_capital(holdings) + cash
+        
+        initial_capital = get_crypto_holdings_capital(holdings) + cash
     else:
         initial_capital = config.CASH
         
@@ -151,16 +226,19 @@ if __name__ == "__main__":
         try:
             if len(outgoing_order_queue) > 0:
                 while len(outgoing_order_queue) > 0:
-                    if rhcrypto.is_order_filled(outgoing_order_queue[0]['id']):
+                    if is_order_filled(outgoing_order_queue[0]['id']):
+                        
                         filled_orders.append(outgoing_order_queue[0])
+                        
                         outgoing_order_queue.pop(0)
                     else:
                         break
             
-            prices = rhcrypto.get_latest_price(stocks)
+            prices = get_latest_price(stocks)
             
             if config.CASHFORSAFELIVE == False or is_live:
-                holdings, bought_price = rhcrypto.get_holdings_and_bought_price(stocks)
+                
+                holdings, bought_price = get_holdings_and_bought_price(stocks)
             
             if config.CASHFORSAFELIVE == False or is_live:
                 cash, equity = get_cash()
@@ -168,10 +246,11 @@ if __name__ == "__main__":
                 # Update only equity
                 _, equity = get_cash()
             
-            tr.set_profit(cash + rhcrypto.get_crypto_holdings_capital(holdings) - initial_capital)
+            tr.set_profit(cash + get_crypto_holdings_capital(holdings) - initial_capital)
+            
             percent_change = tr.get_profit() * 100 / initial_capital
             
-            update_output(mode, tr, equity, holdings, rhcrypto, cash, percent_change)
+            update_output(mode, tr, equity, holdings, cash, percent_change)
     
             for i, stock in enumerate(stocks):
                 
@@ -184,7 +263,7 @@ if __name__ == "__main__":
                 print('trade:', trade, end='\n\n')
                 
                 if trade == "BUY":
-                    price = round(float(rhcrypto.get_latest_price([stock])[0]), 2)
+                    price = round(float(get_latest_price([stock])[0]), 2)
                     
                     if cash > 0:
                         
@@ -238,7 +317,7 @@ if __name__ == "__main__":
                         
                         # https://robin-stocks.readthedocs.io/en/latest/robinhood.html#placing-and-cancelling-orders
                         
-                        price = round(float(rhcrypto.get_latest_price([stock])[0]), 2)
+                        price = round(float(get_latest_price([stock])[0]), 2)
                         
                         holdings_to_sell = holdings[stock] / 10.0
                         
