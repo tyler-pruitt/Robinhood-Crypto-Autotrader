@@ -5,7 +5,7 @@ An automated trader for crypto on Robinhood
 ### 1. place all files in the same folder 
 ### 2. place your Robinhood USERNAME, PASSWORD, and CRYPTO to trade in "config.py"
 
-#### You should fill in your information in the file like so
+#### You should fill in your information in the file "config.py" like so
 
 ```python
 USERNAME = "Your_Robinhood_Username"
@@ -15,19 +15,23 @@ PASSWORD = "Your_Robinhood_Password"
 TIMEINDAYS = 1
 
 # Export the completed crypto orders into a CSV? (BOOLEAN), must be either True or False
+# Note: If set to True, should the user terminate the program via KeyboardInterrupt while trading, then the csv will still be exported
 EXPORTCSV = False
 
 # Plot analytical graphs while running? (BOOLEAN), must be either True or False
 PLOTGRAPH = True
 
-# The mode to run the autotrader, available modes are 'LIVE', 'BACKTEST', and 'SAFE-LIVE'
-MODE = 'SAFE-LIVE'
+# The mode to run the autotrader, available modes are 'LIVE', 'BACKTEST', and 'SAFELIVE'
+MODE = 'SAFELIVE'
 
-# Initial capital to start the backtesting with (optional: only for 'BACKTEST' mode)
+# Initial capital to start the backtesting with (optional: only for 'BACKTEST' and possibly 'SAFELIVE' modes)
 CASH = 100.00
 
+# Is "CASH" above to be used in the 'SAFELIVE' mode? (BOOLEAN), must be either True or False
+CASHFORSAFELIVE = True
+
 # File path to CSV of market data (optional: only for 'BACKTEST' mode)
-PATHTODATA = ''
+DATAPATH = ''
 
 # The cryptocurrencies to have the autotrader place orders on
 CRYPTO = ['BTC', 'ETH']
