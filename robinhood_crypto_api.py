@@ -1,4 +1,11 @@
-"""Robinhood Crypto API Utility."""
+"""
+Robinhood Crypto API Utility.
+
+Try to replace Robinhood Crypto API implementation with robin_stocks.robinhood
+
+Documentation for robin_stocks.robinhood:
+https://robin-stocks.readthedocs.io/en/latest/robinhood.html?highlight=order_buy_crypto_by_price#robin_stocks.robinhood.orders.order_buy_crypto_by_price
+"""
 import logging
 import uuid
 from functools import wraps
@@ -221,7 +228,6 @@ class RobinhoodCrypto():
         return access_token
 
     def quotes(self, pair='BTC'):
-        # rh.crypto.get_crypto_quote(symbol)
         """
         Return: dict
         {'ask_price': '8836.3300', 'bid_price': '8801.0500', 'mark_price': '8818.6900', 
@@ -229,6 +235,8 @@ class RobinhoodCrypto():
          'symbol': 'BTCUSD', 'id': '3d961844-d360-45fc-989b-f6fca761d511',
          'volume': '380373.1898'}
         """
+        # Equivalent to rh.crypto.get_crypto_quote(symbol)
+        
         symbol = RobinhoodCrypto.PAIRS[pair]
         
         assert symbol, 'unknown pair {}'.format(pair)
@@ -332,26 +340,26 @@ class RobinhoodCrypto():
         
         return res
     
-    """
-    Return value:
-    {'account_id': 'abcd',
-     'cancel_url': None,
-     'created_at': '2018-04-22T14:07:37.103809-04:00',
-     'cumulative_quantity': '0.000111860000000000',
-     'currency_pair_id': '3d961844-d360-45fc-989b-f6fca761d511',
-     'executions': [{'effective_price': '8948.500000000000000000', 'id': 'hijk', 'quantity': '0.000111860000000000', 'timestamp': '2018-04-22T14:07:37.329000-04:00'}],
-     'id': 'order_id', 
-     'last_transaction_at': '2018-04-22T14:07:37.329000-04:00', 
-     'price': '9028.670000000000000000',
-     'quantity': '0.000111860000000000',
-     'ref_id': 'ref_id',
-     'side': 'buy',
-     'state': 'filled',
-     'time_in_force': 'gtc',
-     'type': 'market',
-     'updated_at': '2018-04-22T14:07:38.956584-04:00'}
-    """
     def order_status(self, order_id):
+        """
+        Return value:
+        {'account_id': 'abcd',
+         'cancel_url': None,
+         'created_at': '2018-04-22T14:07:37.103809-04:00',
+         'cumulative_quantity': '0.000111860000000000',
+         'currency_pair_id': '3d961844-d360-45fc-989b-f6fca761d511',
+         'executions': [{'effective_price': '8948.500000000000000000', 'id': 'hijk', 'quantity': '0.000111860000000000', 'timestamp': '2018-04-22T14:07:37.329000-04:00'}],
+         'id': 'order_id', 
+         'last_transaction_at': '2018-04-22T14:07:37.329000-04:00', 
+         'price': '9028.670000000000000000',
+         'quantity': '0.000111860000000000',
+         'ref_id': 'ref_id',
+         'side': 'buy',
+         'state': 'filled',
+         'time_in_force': 'gtc',
+         'type': 'market',
+         'updated_at': '2018-04-22T14:07:38.956584-04:00'}
+        """
         url = RobinhoodCrypto.ENDPOINTS['order_status'].format(order_id)
         
         try:
@@ -440,6 +448,8 @@ class RobinhoodCrypto():
             "updated_at": "2018-05-10T07:07:36.091597-04:00"
         }]
         """
+        # Equivalent to rh.crypto.get_crypto_positions()
+        
         try:
             res = self.session_request(RobinhoodCrypto.ENDPOINTS['holdings'], method='get', timeout=5)
         except Exception as e:
@@ -466,6 +476,7 @@ class RobinhoodCrypto():
                 'average_buy_price': '79.26',
                 }}
         """
+        # rh.crypto.get_crypto_positions() is self.holdings()
         holdings_data = self.holdings()
         
         build_holdings_data = dict()
@@ -518,7 +529,7 @@ class RobinhoodCrypto():
         return res
     
     def get_holdings_and_bought_price(self, stocks):
-        # rh.get_crypto_positions()
+        # rh.get_crypto_positions() for self.build_holdings()
         
         holdings = {stocks[i]: 0 for i in range(0, len(stocks))}
         bought_price = {stocks[i]: 0 for i in range(0, len(stocks))}

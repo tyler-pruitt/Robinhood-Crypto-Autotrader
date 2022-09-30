@@ -21,12 +21,12 @@ class Trader():
         self.start_time = time.time()
         self.previous_time = [time.time()] * len(self.stocks)
 
-        # Loss threshold taken to be a positive value
-        self.loss_threshold = abs(5.00)
+        # Loss threshold (in dollars) taken to be a positive value
+        self.loss_threshold = 50.00
         
         # RSI overbought and oversold thresholds
-        self.oversold = 25
-        self.overbought = 75
+        self.oversold = 30
+        self.overbought = 70
         
         self.interval = "15second"
         self.span = "hour"
@@ -35,6 +35,14 @@ class Trader():
         
         self.trade = ''
         self.previous_trade = ''
+        
+        assert self.loss_threshold >= 0
+        
+        assert self.oversold >= 0 and self.oversold <= 100
+        
+        assert self.overbought >= 0 and self.overbought <= 100
+        
+        assert self.profit == 0.0
     
     def get_overbought_threshold(self):
         return self.overbought

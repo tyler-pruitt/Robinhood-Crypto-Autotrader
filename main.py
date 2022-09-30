@@ -52,6 +52,25 @@ def display_holdings(holdings):
         
         print('\t' + str(amount) + ' ' + crypto + " at $" + str(rh.get_crypto_quote(crypto)['mark_price']))
 
+def update_output(mode, tr, equity, holdings, rhcrypto, cash, percent_change):
+    """
+    Prints out the lastest information out to consol
+    """
+    
+    print("======================" + mode + "======================")
+    print("runtime: " + tr.display_time(tr.get_runtime()))
+    
+    print("total equity: $" + str(equity))
+    
+    print('crypto holdings:')
+    display_holdings(holdings)
+    
+    print("total crypto equity: $" + str(rhcrypto.get_crypto_holdings_capital(holdings)))
+    print("cash: $" + str(cash))
+    print("total crypto equity and cash: $" + str(cash + rhcrypto.get_crypto_holdings_capital(holdings)))
+    
+    print("profit: " + tr.display_profit() + " (" + tr.display_profit()[0] + str(round(abs(percent_change), 2)) + "%)")
+
 def check_config():
     assert type(config.TIMEINDAYS) == int and config.TIMEINDAYS >= 1
 
@@ -110,7 +129,21 @@ if __name__ == "__main__":
     df_trades = pd.DataFrame(columns=stocks)
     df_prices = pd.DataFrame(columns=stocks)
     
-    inital_capital_is_init = False
+    # Initialization of holdings and bought price (necessary to be here due to different modes and cash initializations)
+    holdings, bought_price = rhcrypto.get_holdings_and_bought_price(stocks)
+    
+    # Initialization of initial_capital and cash (if necessary)
+    # This initialization needs to be here due to different modes and cash initializations
+    if config.CASHFORSAFELIVE == False or is_live:
+        initial_capital = rhcrypto.get_crypto_holdings_capital(holdings) + cash
+    else:
+        initial_capital = config.CASH
+        
+        # Initialize cash to config.CASH
+        cash = config.CASH
+    
+    assert initial_capital > 0
+    
     
     outgoing_order_queue, filled_orders = [], []
 
@@ -126,40 +159,19 @@ if __name__ == "__main__":
             
             prices = rhcrypto.get_latest_price(stocks)
             
-            holdings, bought_price = rhcrypto.get_holdings_and_bought_price(stocks)
+            if config.CASHFORSAFELIVE == False or is_live:
+                holdings, bought_price = rhcrypto.get_holdings_and_bought_price(stocks)
             
             if config.CASHFORSAFELIVE == False or is_live:
                 cash, equity = get_cash()
-            
-            if inital_capital_is_init == False:
-                if config.CASHFORSAFELIVE == False or is_live:
-                    initial_capital = rhcrypto.get_crypto_holdings_capital(holdings) + cash
-                else:
-                    initial_capital = config.CASH
-                    
-                    cash, equity = get_cash()
-                    cash = config.CASH
-                
-                inital_capital_is_init = True
-                
-                assert initial_capital > 0
+            else:
+                # Update only equity
+                _, equity = get_cash()
             
             tr.set_profit(cash + rhcrypto.get_crypto_holdings_capital(holdings) - initial_capital)
             percent_change = tr.get_profit() * 100 / initial_capital
             
-            print("======================" + mode + "======================")
-            print("runtime: " + tr.display_time(tr.get_runtime()))
-            
-            print("total equity: $" + str(equity))
-            
-            print('crypto holdings:')
-            display_holdings(holdings)
-            
-            print("total crypto equity: $" + str(rhcrypto.get_crypto_holdings_capital(holdings)))
-            print("cash: $" + str(cash))
-            print("total crypto equity and cash: $" + str(cash + rhcrypto.get_crypto_holdings_capital(holdings)))
-            
-            print("profit: " + tr.display_profit() + " (" + tr.display_profit()[0] + str(round(abs(percent_change), 2)) + "%)")
+            update_output(mode, tr, equity, holdings, rhcrypto, cash, percent_change)
     
             for i, stock in enumerate(stocks):
                 
@@ -199,14 +211,28 @@ if __name__ == "__main__":
                                 print("Order info:", order_info)
                             else:
                                 print("Orders are still in queue: order is canceled")
+                                
+                                trade = "UNABLE TO BUY (ORDERS STILL IN QUEUE)"
                             
                         else:
-                            print(mode + ": Buy order is not going through")
+                            print(mode + ": live buy order is not going through")
+                            
+                            # Simulate buying the crypto by subtracting from cash, adding to holdings, and adjusting average bought price
+                            
+                            cash -= dollars_to_sell
+                            
+                            holdings_to_add = dollars_to_sell / price
+                            
+                            bought_price[stock] = ((bought_price[stock] * holdings[stock]) + (holdings_to_add * price)) / (holdings[stock] + holdings_to_add)
+                            
+                            holdings[stock] += holdings_to_add
+                            
+                            trade = "SIMULATION BUY"
     
                     else:
                         print("Not enough cash")
                         
-                        trade = "UNABLE TO BUY"
+                        trade = "UNABLE TO BUY (NOT ENOUGH CASH)"
                 elif trade == "SELL":
                     if holdings[stock] > 0:
                         
@@ -235,14 +261,27 @@ if __name__ == "__main__":
                                 print("Order info:", order_info)
                             else:
                                 print("Orders are still in queue: order is canceled")
+                                
+                                trade = "UNABLE TO SELL (ORDERS STILL IN QUEUE)"
                             
                         else:
-                            print(mode + ": Sell order is not going through")
+                            print(mode + ": live sell order is not going through")
+                            
+                            # Simulate selling the crypto by adding to cash and subtracting from holdings
+                            cash += holdings_to_sell * price
+                            
+                            holdings[stock] -= holdings_to_sell
+                            
+                            # Average bought price is unaffected when selling
+                            if holdings[stock] == 0:
+                                bought_price[stock] = 0
+                            
+                            trade = "SIMULATION SELL"
                         
                     else:
                         print("Not enough holdings")
     
-                        trade = "UNABLE TO SELL"
+                        trade = "UNABLE TO SELL (NOT ENOUGH HOLDINGS)"
                 
                 price_dict[stock] = price
                 
@@ -257,6 +296,11 @@ if __name__ == "__main__":
             time.sleep(tr.get_interval_sec())
         
         except KeyboardInterrupt:
+            break
+        
+        except Exception:
+            print("An error occured: stopping process")
+            
             break
 
     logout()

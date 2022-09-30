@@ -71,7 +71,10 @@ def RSI(times, prices, period):
         avgU = count_gain / period
         avgD = count_loss / period
         
-        RSI.append([times[j+1], 100 - 100 / (1 + (avgU / avgD))])
+        try:
+            RSI.append([times[j+1], 100 - 100 / (1 + (avgU / avgD))])
+        except ZeroDivisionError:
+            RSI.append([times[j+1], 100])
     
     return RSI
 
