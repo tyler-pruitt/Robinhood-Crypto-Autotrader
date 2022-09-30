@@ -114,7 +114,7 @@ class RobinhoodCrypto():
         
         self.setup_for_api_call(_access_token)
         
-        print("robinhood crypto login successful")
+        print("robinhood crypto api login successful")
 
     def setup_for_api_call(self, access_token):
         self._api_session = requests.session()
