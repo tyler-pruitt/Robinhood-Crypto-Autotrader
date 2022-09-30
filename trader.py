@@ -266,7 +266,7 @@ class Trader():
             macd_signal_indicator = "HOLD"
         
         if config.PLOTGRAPH:
-            self.plot_indicator(stock, prices, times, macd, signal, macd_signal_difference, rsi_data)
+            self.plot(stock, prices, times, macd, signal, macd_signal_difference, rsi_data)
         
         if rsi_indicator == "BUY" and macd_signal_indicator == "BUY":
 
@@ -368,7 +368,7 @@ class Trader():
         plt.show()
         plt.pause(pause)
     
-    def plot_indicator(self, stock, prices, price_times, macd, signal, macd_signal_difference, rsi, pause=1):
+    def plot(self, stock, prices, price_times, macd, signal, macd_signal_difference, rsi, pause=1):
         self.plot_stock(stock, prices, price_times)
         self.plot_macd_signal(stock, macd, signal)
         self.plot_macd_signal_difference(stock, macd_signal_difference)
