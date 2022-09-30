@@ -8,7 +8,7 @@ import time
 import pandas as pd
 import numpy as np
 
-# Make sure to take advantage of https://robin-stocks.readthedocs.io/en/latest/robinhood.html#getting-crypto-information
+# Make sure to take advantage of robin_stocks.robinhood documentation: https://robin-stocks.readthedocs.io/en/latest/robinhood.html
 
 def login():
     time_logged_in = 60 * 60 * 24 * config.TIMEINDAYS
