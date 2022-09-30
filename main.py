@@ -52,28 +52,33 @@ def display_holdings(holdings):
         
         print('\t' + str(amount) + ' ' + crypto + " at $" + str(rh.get_crypto_quote(crypto)['mark_price']))
 
-if __name__ == "__main__":
+def check_config():
     assert type(config.TIMEINDAYS) == int and config.TIMEINDAYS >= 1
 
     assert type(config.USERNAME) == str and type(config.PASSWORD) == str
+    
     assert len(config.USERNAME) > 0 and len(config.PASSWORD) > 0
     
-    login()
-    
-    mode = config.MODE
-    available_modes = ['LIVE', 'BACKTEST', 'SAFE-LIVE']
-    assert mode in available_modes
-    
-    if mode == 'LIVE':
-        is_live = True
-    else:
-        is_live = False
+    assert config.MODE in ['LIVE', 'BACKTEST', 'SAFE-LIVE']
     
     assert type(config.EXPORTCSV) == bool
 
     assert type(config.PLOTGRAPH) == bool
 
     assert type(config.CRYPTO) == list and len(config.CRYPTO) > 0
+
+if __name__ == "__main__":
+    
+    check_config()
+    
+    login()
+    
+    mode = config.MODE
+    
+    if mode == 'LIVE':
+        is_live = True
+    else:
+        is_live = False
     
     rhcrypto = RobinhoodCrypto(config.USERNAME, config.PASSWORD)
     
