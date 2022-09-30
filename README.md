@@ -45,7 +45,7 @@ CRYPTO = ['BTC', 'ETH']
 - `BSV` for Bitcoin SV
 - `LTC` for Litecoin
 - `DOGE` for Dogecoin
-- `SHIB` for Shiba Inu (CURRENTLY NOT WORKING DUE TO ZeroDivisionError IN PROCESSING)
+- `SHIB` for Shiba Inu (CURRENTLY NOT WORKING DUE TO ZeroDivisionError IN RSI CALCULATION)
 - `SOL` for Solana
 - `MATIC` for Polygon
 - `COMP` for Compound
