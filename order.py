@@ -57,7 +57,7 @@ class Order():
         self.type = order_info['type']
         self.updated_at = order_info['updated_at']
     
-    def update(new_order_info):
+    def update(self, new_order_info):
         self.account_id = order_info['account_id']
         self.average_price = order_info['average_price']
         self.cancel_url = order_info['cancel_url']
@@ -82,7 +82,7 @@ class Order():
         self.type = order_info['type']
         self.updated_at = order_info['updated_at']
     
-    def cancel():
+    def cancel(self):
         updated_order_info = rh.orders.cancel_crypto_order(self.id)
         
         self.update(updated_order_info)
