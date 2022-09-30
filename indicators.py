@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Sun Apr 10 14:39:58 2022
-
-@author: tylerpruitt
-"""
 
 def MA(times, prices, period):
     """
