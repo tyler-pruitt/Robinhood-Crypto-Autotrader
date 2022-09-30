@@ -4,7 +4,8 @@
 class Order():
     def __init__(self, order_info):
         """
-        order_info = {'account_id': 'some_id',
+        order_info = {
+        'account_id': 'some_id',
         'average_price': 'some_float',
         'cancel_url': 'some_url',
         'created_at': 'some_time',
@@ -26,8 +27,10 @@ class Order():
         'state': 'unconfirmed',
         'time_in_force': 'gtc',
         'type': 'market',
-        'updated_at': 'some_time'}
+        'updated_at': 'some_time'
+        }
         """
+        
         self.account_id = order_info['account_id']
         self.average_price = order_info['average_price']
         self.cancel_url = order_info['cancel_url']
