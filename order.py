@@ -58,6 +58,8 @@ class Order():
         self.updated_at = order_info['updated_at']
     
     def update(self, new_order_info):
+        assert new_order_info['id'] == self.id
+        
         self.account_id = new_order_info['account_id']
         self.average_price = new_order_info['average_price']
         self.cancel_url = new_order_info['cancel_url']
@@ -67,7 +69,6 @@ class Order():
         self.entered_price = new_order_info['entered_price']
         self.executions = new_order_info['executions']
         self.funding_source_id = new_order_info['funding_source_id']
-        self.id = new_order_info['id']
         self.initiator_id = new_order_info['initiator_id']
         self.initiator_type = new_order_info['initiator_type']
         self.is_visible_to_user = new_order_info['is_visible_to_user']
