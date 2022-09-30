@@ -57,6 +57,9 @@ class Order():
         self.type = order_info['type']
         self.updated_at = order_info['updated_at']
     
+    def __repr__(self):
+        return self.id
+    
     def update(self):
         
         new_order_info = rh.orders.get_crypto_order_info(self.id)
