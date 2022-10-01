@@ -53,14 +53,6 @@ def get_crypto_holdings_capital(holdings):
         
     return capital
 
-def is_order_filled(order_id):
-    order_update = rh.orders.get_crypto_order_info(order_id)
-    
-    if order_update['state'] == 'filled':
-        return True
-    else:
-        return False
-
 def get_latest_price(stocks):
     """
     Returns: list of prices
@@ -225,7 +217,7 @@ if __name__ == "__main__":
     while tr.continue_trading():
         try:
             while len(outgoing_order_queue) > 0:
-                if is_order_filled(outgoing_order_queue[0]['id']):
+                if outgoing_order_queue[0].is_filled():
 
                     filled_orders.append(outgoing_order_queue[0])
 
@@ -284,7 +276,7 @@ if __name__ == "__main__":
                                 # Market order
                                 order_info = rh.orders.order_buy_crypto_by_price(symbol=stock, amountInDollars=dollars_to_sell, timeInForce='gtc', jsonify=True)
                                 
-                                outgoing_order_queue.append(order_info)
+                                outgoing_order_queue.append(order.Order(order_info))
                                 
                                 print("Order info:", order_info)
                             else:
@@ -334,7 +326,7 @@ if __name__ == "__main__":
                                 # Market order
                                 order_info = rh.orders.order_sell_crypto_by_quantity(symbol=stock, quantity=holdings_to_sell, timeInForce='gtc', jsonify=True)
                                 
-                                outgoing_order_queue.append(order_info)
+                                outgoing_order_queue.append(order.Order(order_info))
                                 
                                 print("Order info:", order_info)
                             else:
