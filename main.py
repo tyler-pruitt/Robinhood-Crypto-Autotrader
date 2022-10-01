@@ -120,12 +120,13 @@ def display_holdings(holdings):
         
         print('\t' + str(amount) + ' ' + crypto + " at $" + str(rh.get_crypto_quote(crypto)['mark_price']))
 
-def update_output(mode, tr, equity, holdings, cash, percent_change):
+def update_output(iteration_num, mode, tr, equity, holdings, cash, percent_change):
     """
     Prints out the lastest information out to consol
     """
     
-    print("======================" + mode + "======================")
+    print("======================ITERATION " + str(iteration_num) + "======================")
+    print("mode: " + mode)
     print("runtime: " + tr.display_time(tr.get_runtime()))
     
     print("total equity: $" + str(equity))
@@ -183,7 +184,7 @@ if __name__ == "__main__":
     
     stocks = config.CRYPTO
     
-    print('cryptos:', stocks)
+    print('cryptos:', stocks, end='\n\n')
     
     cash, equity = get_cash()
 
@@ -213,7 +214,9 @@ if __name__ == "__main__":
     
     
     outgoing_order_queue, filled_orders = [], []
-
+    
+    iteration_num = 1
+    
     while tr.continue_trading():
         try:
             while len(outgoing_order_queue) > 0:
@@ -241,7 +244,7 @@ if __name__ == "__main__":
             
             percent_change = tr.get_profit() * 100 / initial_capital
             
-            update_output(mode, tr, equity, holdings, cash, percent_change)
+            update_output(iteration_num, mode, tr, equity, holdings, cash, percent_change)
     
             for i, stock in enumerate(stocks):
                 
@@ -362,7 +365,11 @@ if __name__ == "__main__":
             print('\ndf_prices \n', df_prices, end='\n\n')
             print('df_trades \n', df_trades, end='\n\n')
             
-            print("Waiting " + str(tr.get_interval_sec()) + ' seconds...', end='\n\n')
+            print("Waiting " + str(tr.get_interval_sec()) + ' seconds...')
+            print("======================" + "="*len("ITERATION " + str(iteration_num)) + "======================", end='\n\n')
+            
+            iteration_num += 1
+            
             time.sleep(tr.get_interval_sec())
         
         except KeyboardInterrupt:
