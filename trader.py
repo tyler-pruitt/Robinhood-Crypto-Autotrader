@@ -245,8 +245,6 @@ class Trader():
         
         rsi_data = RSI(times, prices, 14)
         
-        print("RSI:", rsi_data[-1][1])
-        
         if rsi_data[-1][1] > self.get_overbought_threshold():
             rsi_indicator = "SELL"
         elif rsi_data[-1][1] < self.get_oversold_threshold():
@@ -261,10 +259,6 @@ class Trader():
             for j in range(len(signal)):
                 if macd[i][0] == signal[j][0]:
                     macd_signal_difference.append([signal[j][0], macd[i][1] - signal[j][1]])
-        
-        print("MACD", macd[-1][1])
-        print("signal:", signal[-1][1])
-        print("difference:", macd_signal_difference[-1][1])
         
         if macd_signal_difference[-1][1] > 0:
             macd_signal_indicator = "SELL"
