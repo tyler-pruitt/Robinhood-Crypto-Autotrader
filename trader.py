@@ -57,7 +57,7 @@ class Trader():
         self.oversold = threshold
     
     def __repr__(self):
-        return "Trader(crypto: " + str(self.stocks) + ", profit: " + self.display_profit() + ", runtime: " + self.display_time(self.get_runtime()) + ")"
+        return "Trader(profit: " + self.display_profit() + ", runtime: " + self.display_time(self.get_runtime()) + ")"
     
     def continue_trading(self, override=False):
         # Assumes there is no condition for which the user will want the trading bot to stop trading
