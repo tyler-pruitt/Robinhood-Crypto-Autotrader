@@ -260,7 +260,7 @@ if __name__ == "__main__":
                         
                         # https://robin-stocks.readthedocs.io/en/latest/robinhood.html#placing-and-cancelling-orders
                         
-                        dollars_to_sell = cash / 4.0
+                        dollars_to_sell = cash / 10.0
                         
                         print('Attempting to BUY ${} of {} at price ${}'.format(dollars_to_sell, stock, price))
                         
@@ -310,7 +310,7 @@ if __name__ == "__main__":
                         
                         price = round(float(get_latest_price([stock])[0]), 2)
                         
-                        holdings_to_sell = holdings[stock] / 4.0
+                        holdings_to_sell = holdings[stock] / 10.0
                         
                         print('Attempting to SELL {} of {} at price ${} for ${}'.format(holdings_to_sell, stock, price, round(holdings_to_sell * price, 2)))
     
