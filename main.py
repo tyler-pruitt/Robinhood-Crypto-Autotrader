@@ -149,6 +149,8 @@ def check_config():
     
     assert config.MODE in ['LIVE', 'BACKTEST', 'SAFELIVE']
     
+    assert type(config.EXPORTFILE) == bool
+    
     assert type(config.EXPORTCSV) == bool
 
     assert type(config.PLOTGRAPH) == bool
@@ -381,6 +383,14 @@ if __name__ == "__main__":
             break
 
     logout()
+    
+    if config.EXPORTFILE:
+        file = open("output.txt.", "w")
+        
+        if output != "":
+            file.writelines(output)
+        
+        file.close()
     
     if config.EXPORTCSV:
         rh.export.export_completed_crypto_orders('./', 'completed_crypto_orders')
