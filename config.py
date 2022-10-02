@@ -8,6 +8,9 @@ TIMEINDAYS = 1
 # Note: If set to True, should the user terminate the program via KeyboardInterrupt while trading, then the csv will still be exported
 EXPORTCSV = False
 
+# Export the consol output into a file? (BOOLEAN), must be either True or False
+EXPORTFILE = True
+
 # Plot analytical graphs while running? (BOOLEAN), must be either True or False
 PLOTGRAPH = False
 
