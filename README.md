@@ -30,9 +30,6 @@ CASH = 1000.00
 # Is "CASH" above to be used in the 'SAFELIVE' mode? (BOOLEAN), must be either True or False
 CASHFORSAFELIVE = True
 
-# File path to CSV of market data (optional: only for 'BACKTEST' mode)
-DATAPATH = ''
-
 # The cryptocurrencies to have the autotrader place orders on
 CRYPTO = ['BTC','ETH']
 ```
