@@ -7,6 +7,7 @@ import datetime as dt
 import time
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 # Make sure to take advantage of robin_stocks.robinhood documentation: https://robin-stocks.readthedocs.io/en/latest/robinhood.html
 
@@ -35,6 +36,13 @@ def get_cash():
     
     
     return(cash, equity)
+
+def plot_portfolio(time, portfolio):
+    plt.plot(time, portfolio, 'g-')
+    plt.title("Portfolio (cash + crypto equity)")
+    plt.xlabel("Runtime (in seconds)")
+    plt.ylabel("Value (in USD)")
+    plt.show()
 
 def build_dataframes(df_trades, trade_dict, df_prices, price_dict):
     time_now = str(dt.datetime.now().time())[:8]
@@ -120,13 +128,13 @@ def display_holdings(holdings):
         
         print('\t' + str(amount) + ' ' + crypto + " at $" + str(rh.get_crypto_quote(crypto)['mark_price']))
 
-def update_output(iteration_num, mode, tr, equity, holdings, cash, percent_change):
+def update_output(iteration_num, tr, equity, holdings, cash, percent_change):
     """
     Prints out the lastest information out to consol
     """
     
     print("======================ITERATION " + str(iteration_num) + "======================")
-    print("mode: " + mode)
+    print("mode: " + config.MODE)
     print("runtime: " + tr.display_time(tr.get_runtime()))
     
     print("total equity: $" + str(equity))
@@ -140,6 +148,11 @@ def update_output(iteration_num, mode, tr, equity, holdings, cash, percent_chang
     
     print("profit: " + tr.display_profit() + " (" + tr.display_profit()[0] + str(round(abs(percent_change), 2)) + "%)")
 
+def backtest():
+    print("Backtesting is still being implemented and is unavailable at this time.")
+    
+    return
+
 def check_config():
     assert type(config.TIMEINDAYS) == int and config.TIMEINDAYS >= 1
 
@@ -151,7 +164,9 @@ def check_config():
     
     assert type(config.EXPORTCSV) == bool
 
-    assert type(config.PLOTGRAPH) == bool
+    assert type(config.PLOTANALYTICS) == bool
+    
+    assert type(config.PLOTPORTFOLIO) == bool
 
     assert type(config.CRYPTO) == list and len(config.CRYPTO) > 0
     
@@ -160,9 +175,9 @@ def check_config():
     for i in range(len(config.CRYPTO)):
         assert config.CRYPTO[i] in pairs
     
-    assert type(config.CASHFORSAFELIVE) == bool
+    assert type(config.USECASH) == bool
     
-    if config.CASHFORSAFELIVE:
+    if config.USECASH:
         assert type(config.CASH) == float or type(config.CASH) == int
         
         assert config.CASH > 0
@@ -175,9 +190,9 @@ if __name__ == "__main__":
     
     login()
     
-    mode = config.MODE
+    #mode = config.MODE
     
-    if mode == 'LIVE':
+    if config.MODE == 'LIVE':
         is_live = True
     else:
         is_live = False
@@ -185,6 +200,9 @@ if __name__ == "__main__":
     stocks = config.CRYPTO
     
     print('cryptos:', stocks, end='\n\n')
+    
+    if config.MODE == 'BACKTEST':
+        backtest()
     
     cash, equity = get_cash()
 
@@ -201,7 +219,7 @@ if __name__ == "__main__":
     
     # Initialization of initial_capital and cash (if necessary)
     # This initialization needs to be here due to different modes and cash initializations
-    if config.CASHFORSAFELIVE == False or is_live:
+    if config.USECASH == False or is_live:
         
         initial_capital = get_crypto_holdings_capital(holdings) + cash
     else:
@@ -212,29 +230,33 @@ if __name__ == "__main__":
     
     assert initial_capital > 0
     
+    if is_live:
+        outgoing_order_queue, filled_orders = [], []
     
-    outgoing_order_queue, filled_orders = [], []
+    if config.PLOTPORTFOLIO:
+        time_data, portfolio_data = [], []
     
     iteration_num = 1
     
     while tr.continue_trading():
         try:
-            while len(outgoing_order_queue) > 0:
-                if outgoing_order_queue[0].is_filled():
-
-                    filled_orders.append(outgoing_order_queue[0])
-
-                    outgoing_order_queue.pop(0)
-                else:
-                    break
+            if is_live:
+                while len(outgoing_order_queue) > 0:
+                    if outgoing_order_queue[0].is_filled():
+    
+                        filled_orders.append(outgoing_order_queue[0])
+    
+                        outgoing_order_queue.pop(0)
+                    else:
+                        break
             
             prices = get_latest_price(stocks)
             
-            if config.CASHFORSAFELIVE == False or is_live:
+            if config.USECASH == False or is_live:
                 
                 holdings, bought_price = get_holdings_and_bought_price(stocks)
             
-            if config.CASHFORSAFELIVE == False or is_live:
+            if config.USECASH == False or is_live:
                 cash, equity = get_cash()
             else:
                 # Update only equity
@@ -244,8 +266,14 @@ if __name__ == "__main__":
             
             percent_change = tr.get_profit() * 100 / initial_capital
             
-            update_output(iteration_num, mode, tr, equity, holdings, cash, percent_change)
-    
+            update_output(iteration_num, tr, equity, holdings, cash, percent_change)
+            
+            if config.PLOTPORTFOLIO:
+                time_data += [tr.get_runtime()]
+                portfolio_data += [cash + get_crypto_holdings_capital(holdings)]
+                
+                plot_portfolio(time_data, portfolio_data)
+            
             for i, stock in enumerate(stocks):
                 
                 price = float(prices[i])
@@ -263,7 +291,7 @@ if __name__ == "__main__":
                         
                         # https://robin-stocks.readthedocs.io/en/latest/robinhood.html#placing-and-cancelling-orders
                         
-                        dollars_to_sell = cash / 10.0
+                        dollars_to_sell = cash / 5.0
                         
                         print('Attempting to BUY ${} of {} at price ${}'.format(dollars_to_sell, stock, price))
                         
@@ -288,7 +316,7 @@ if __name__ == "__main__":
                                 trade = "UNABLE TO BUY (ORDERS STILL IN QUEUE)"
                             
                         else:
-                            print(mode + ": live buy order is not going through")
+                            print(config.MODE + ": live buy order is not going through")
                             
                             # Simulate buying the crypto by subtracting from cash, adding to holdings, and adjusting average bought price
                             
@@ -313,7 +341,7 @@ if __name__ == "__main__":
                         
                         price = round(float(get_latest_price([stock])[0]), 2)
                         
-                        holdings_to_sell = holdings[stock] / 10.0
+                        holdings_to_sell = holdings[stock] / 5.0
                         
                         print('Attempting to SELL {} of {} at price ${} for ${}'.format(holdings_to_sell, stock, price, round(holdings_to_sell * price, 2)))
     
@@ -338,7 +366,7 @@ if __name__ == "__main__":
                                 trade = "UNABLE TO SELL (ORDERS STILL IN QUEUE)"
                             
                         else:
-                            print(mode + ": live sell order is not going through")
+                            print(config.MODE + ": live sell order is not going through")
                             
                             # Simulate selling the crypto by adding to cash and subtracting from holdings
                             cash += holdings_to_sell * price

@@ -9,7 +9,10 @@ TIMEINDAYS = 1
 EXPORTCSV = False
 
 # Plot analytical graphs while running? (BOOLEAN), must be either True or False
-PLOTGRAPH = False
+PLOTANALYTICS = False
+
+# Plot graph of portfolio while running? (BOOLEAN), must be either True of False
+PLOTPORTFOLIO = True
 
 # The mode to run the autotrader, available modes are 'LIVE', 'BACKTEST', and 'SAFELIVE'
 MODE = 'SAFELIVE'
@@ -18,7 +21,7 @@ MODE = 'SAFELIVE'
 CASH = 1000.00
 
 # Is "CASH" above to be used in the 'SAFELIVE' mode? (BOOLEAN), must be either True or False
-CASHFORSAFELIVE = True
+USECASH = True
 
 # The cryptocurrencies to have the autotrader place orders on
 CRYPTO = ['BTC','ETH']
