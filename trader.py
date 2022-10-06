@@ -5,7 +5,7 @@ import time
 import matplotlib.pyplot as plt
 import matplotlib.dates as dates
 import warnings
-#import pandas_ta as ta
+import pandas_ta as ta
 
 import config
 from indicators import MA, EMA, RSI, MACD
@@ -19,7 +19,6 @@ class Trader():
         self.stocks = stocks
         
         self.start_time = time.time()
-        self.previous_time = [time.time()] * len(self.stocks)
 
         # Loss threshold (in dollars) taken to be a positive value
         self.loss_threshold = 50.00
@@ -59,10 +58,11 @@ class Trader():
     def __repr__(self):
         return "Trader(profit: " + self.display_profit() + ", runtime: " + self.display_time(self.get_runtime()) + ")"
     
-    def continue_trading(self, override=False):
-        # Assumes there is no condition for which the user will want the trading bot to stop trading
-        if override:
-            return True
+    def continue_trading(self, override=None):
+        if override != None:
+            assert type(override) == bool
+            
+            return override
         else:
             if self.get_profit() >= -1 * self.get_loss_threshold():
                 return True
@@ -92,30 +92,6 @@ class Trader():
         
         
         return ', '.join(result[:granularity])
-    
-    def get_interval_sec(self):
-        for i in range(1, len(self.interval)):
-            try:
-                digit = int(self.interval[:i])
-            except ValueError:
-                break
-        
-        time = self.interval[i-1:]
-        
-        if time == 'second':
-            sec = digit
-        elif time == 'minute':
-            sec = 60 * digit
-        elif time == 'hour':
-            sec = 3600 * digit
-        elif time == 'day':
-            sec = 86400 * digit
-        elif time == 'week':
-            sec = 604800 * digit
-        else:
-            raise ValueError
-        
-        return sec
     
     def set_trade(self, trade):
         self.trade = trade
@@ -184,12 +160,6 @@ class Trader():
     def set_start_time(self, time):
         self.start_time = time
     
-    def get_previous_time(self, stock):
-        return self.previous_time[self.stocks.index(stock)]
-    
-    def set_previous_time(self, stock, time):
-        self.previous_time[self.stocks.index(stock)] = time
-    
     def get_historical_data(self, stock, interval, span):
         historical_data = rh.crypto.get_crypto_historicals(stock, interval=interval, span=span, bounds='24_7')
         
@@ -232,16 +202,27 @@ class Trader():
         
         return data
 
-    def determine_trade(self, stock):
+    def determine_trade(self, stock, stock_historicals=None):
         
-        if time.time() - self.get_previous_time(stock) >= 0.25:
+        if config.MODE == 'BACKTEST':
+            assert stock_historicals != None
             
+            # Set times and prices given stock_historicals
+            # For this algorithm, need times and prices to be of length >= (macd_slow_period + macd_signal_period - 1) = 34
+            times, prices = [], []
+            
+            for k in range(len(stock_historicals)):
+                times += [stock_historicals[k]['begins_at']]
+                
+                prices += [float(stock_historicals[k]['close_price'])]
+        else:
             df_historical_prices = self.get_historical_prices(stock, interval=self.interval, span=self.span)
-            self.set_previous_time(stock, time.time())
-        
-        # https://pandas.pydata.org/docs/reference/api/pandas.Timestamp.html#pandas.Timestamp
-        times = self.convert_dataframe_to_list(self.get_historical_times(stock, self.interval, self.span))
-        prices = self.convert_dataframe_to_list(df_historical_prices, True)
+            
+            # For this algorithm, need times and prices to be of length >= (macd_slow_period + macd_signal_period - 1) = 34
+            
+            # https://pandas.pydata.org/docs/reference/api/pandas.Timestamp.html#pandas.Timestamp
+            times = self.convert_dataframe_to_list(self.get_historical_times(stock, self.interval, self.span))
+            prices = self.convert_dataframe_to_list(df_historical_prices, True)
         
         rsi_data = RSI(times, prices, 14)
         
@@ -268,17 +249,15 @@ class Trader():
             macd_signal_indicator = "HOLD"
         
         if config.PLOTANALYTICS:
-            self.plot(stock, prices, times, macd, signal, macd_signal_difference, rsi_data)
+            self.plot_analytics(stock, prices, times, macd, signal, macd_signal_difference, rsi_data)
         
         if rsi_indicator == "BUY" and macd_signal_indicator == "BUY":
-
-            # If the prediction is that the price will increase, buy
+            
             self.set_previous_trade(self.get_trade())
             
             self.set_trade("BUY")
         elif rsi_indicator == "SELL" and macd_signal_indicator == "SELL":
-
-            # If the prediction is that the price will decrease, sell
+            
             self.set_previous_trade(self.get_trade())
             
             self.set_trade("SELL")
@@ -370,21 +349,22 @@ class Trader():
         plt.show()
         plt.pause(pause)
     
-    def plot(self, stock, prices, price_times, macd, signal, macd_signal_difference, rsi, pause=1):
+    def plot_analytics(self, stock, prices, price_times, macd, signal, macd_signal_difference, rsi, pause=1):
         self.plot_stock(stock, prices, price_times)
         self.plot_macd_signal(stock, macd, signal)
         self.plot_macd_signal_difference(stock, macd_signal_difference)
         self.plot_rsi(stock, rsi)
     
     def convert_timestamp_to_datetime(self, timestamp):
-        string = str(timestamp)[:-6]
+        if type(timestamp) != str:
+            timestamp = str(timestamp)[:-6]
         
-        year = int(string[:4])
-        month = int(string[5:7])
-        day = int(string[8:10])
+        year = int(timestamp[:4])
+        month = int(timestamp[5:7])
+        day = int(timestamp[8:10])
         
-        hour = int(string[11:13])
-        minute = int(string[14:16])
-        second = int(string[17:19])
+        hour = int(timestamp[11:13])
+        minute = int(timestamp[14:16])
+        second = int(timestamp[17:19])
         
         return dt.datetime(year, month, day, hour, minute, second)

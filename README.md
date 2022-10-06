@@ -22,10 +22,21 @@ EXPORTCSV = False
 PLOTANALYTICS = False
 
 # Plot graph of portfolio while running? (BOOLEAN), must be either True of False
-PLOTPORTFOLIO = False
+PLOTPORTFOLIO = True
 
 # The mode to run the autotrader, available modes are 'LIVE', 'BACKTEST', and 'SAFELIVE'
-MODE = 'SAFELIVE'
+MODE = 'BACKTEST'
+
+#------------------FOR 'BACKTEST' MODE ONLY---------------------------------
+# 'INTERVAL', 'SPAN', and 'BOUNDS' used for retreiving historical crypto data for backtesting
+
+INTERVAL = '15second'
+
+SPAN = 'hour'
+
+BOUNDS = '24_7'
+
+#--------------------------------------------------------------------
 
 # Initial capital to start the backtesting with (optional: only for 'BACKTEST' and possibly 'SAFELIVE' modes)
 CASH = 1000.00
@@ -36,6 +47,15 @@ USECASH = True
 # The cryptocurrencies to have the autotrader place orders on
 CRYPTO = ['BTC','ETH']
 ```
+
+#### Interval options are
+['15second', '5minute', '10minute', 'hour', 'day', 'week']
+
+#### Span options are
+['hour', 'day', 'week', 'month', '3month', 'year', '5year']
+
+#### Bounds options are
+['Regular', 'trading', 'extended', '24_7']
 
 #### Cryptocurrency options are 
 - `BTC` for Bitcoin

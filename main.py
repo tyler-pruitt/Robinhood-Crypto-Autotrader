@@ -8,6 +8,7 @@ import time
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
 
 # Make sure to take advantage of robin_stocks.robinhood documentation: https://robin-stocks.readthedocs.io/en/latest/robinhood.html
 
@@ -123,17 +124,53 @@ def get_holdings_and_bought_price(stocks):
 
     return holdings, bought_price
 
+def convert_time_to_sec(time):
+    """
+    RUNTIME IS TOO SLOW
+    """
+    
+    assert type(time) == str
+    
+    digit = 1
+    
+    for i in range(1, len(time)):
+        try:
+            digit = int(time[:i])
+        except ValueError:
+            break
+    
+    time = time[i-1:]
+    
+    if time == 'second':
+        sec = digit
+    elif time == 'minute':
+        sec = 60 * digit
+    elif time == 'hour':
+        sec = 3600 * digit
+    elif time == 'day':
+        sec = 86400 * digit
+    elif time == 'week':
+        sec = 604800 * digit
+    else:
+        raise ValueError
+    
+    return sec
+
 def display_holdings(holdings):
     for crypto, amount in holdings.items():
         
         print('\t' + str(amount) + ' ' + crypto + " at $" + str(rh.get_crypto_quote(crypto)['mark_price']))
 
-def update_output(iteration_num, tr, equity, holdings, cash, percent_change):
+def update_output(iteration_num, tr, equity, holdings, cash, percent_change, total_iteration_num=None):
     """
     Prints out the lastest information out to consol
     """
     
-    print("======================ITERATION " + str(iteration_num) + "======================")
+    if config.MODE != 'BACKTEST':
+        print("======================ITERATION " + str(iteration_num) + "======================")
+    else:
+        print("======================ITERATION " + str(iteration_num) + '/' + str(total_iteration_num) + "======================")
+    
     print("mode: " + config.MODE)
     print("runtime: " + tr.display_time(tr.get_runtime()))
     
@@ -148,10 +185,17 @@ def update_output(iteration_num, tr, equity, holdings, cash, percent_change):
     
     print("profit: " + tr.display_profit() + " (" + tr.display_profit()[0] + str(round(abs(percent_change), 2)) + "%)")
 
-def backtest():
-    print("Backtesting is still being implemented and is unavailable at this time.")
+def download_backtest_data(stocks):
     
-    return
+    crypto_historical_data = []
+    
+    for i in range(len(stocks)):
+        
+        crypto_historical_data += [rh.crypto.get_crypto_historicals(symbol=stocks[i], interval=config.INTERVAL, span=config.SPAN, bounds=config.BOUNDS)]
+    
+    print("downloading backtesting data finished")
+    
+    return crypto_historical_data
 
 def check_config():
     assert type(config.TIMEINDAYS) == int and config.TIMEINDAYS >= 1
@@ -182,6 +226,23 @@ def check_config():
         
         assert config.CASH > 0
     
+    if config.MODE == 'BACKTEST':
+        intervals = ['15second', '5minute', '10minute', 'hour', 'day', 'week']
+        spans = ['hour', 'day', 'week', 'month', '3month', 'year', '5year']
+        bounds = ['Regular', 'trading', 'extended', '24_7']
+        
+        assert type(config.INTERVAL) == str
+        
+        assert config.INTERVAL in intervals
+        
+        assert type(config.SPAN) == str
+        
+        assert config.SPAN in spans
+        
+        assert type(config.BOUNDS) == str
+        
+        assert config.BOUNDS in bounds
+    
     print("configuration test: PASSED")
 
 if __name__ == "__main__":
@@ -190,56 +251,69 @@ if __name__ == "__main__":
     
     login()
     
-    #mode = config.MODE
-    
-    if config.MODE == 'LIVE':
-        is_live = True
-    else:
-        is_live = False
-    
-    stocks = config.CRYPTO
-    
-    print('cryptos:', stocks, end='\n\n')
-    
-    if config.MODE == 'BACKTEST':
-        backtest()
-    
-    cash, equity = get_cash()
-
-    tr = trader.Trader(stocks)
-
-    trade_dict = {stocks[i]: 0 for i in range(0, len(stocks))}
-    price_dict = {stocks[i]: 0 for i in range(0, len(stocks))}
-    
-    df_trades = pd.DataFrame(columns=stocks)
-    df_prices = pd.DataFrame(columns=stocks)
-    
-    # Initialization of holdings and bought price (necessary to be here due to different modes and cash initializations)
-    holdings, bought_price = get_holdings_and_bought_price(stocks)
-    
-    # Initialization of initial_capital and cash (if necessary)
-    # This initialization needs to be here due to different modes and cash initializations
-    if config.USECASH == False or is_live:
+    try:
         
-        initial_capital = get_crypto_holdings_capital(holdings) + cash
-    else:
-        initial_capital = config.CASH
+        if config.MODE == 'LIVE':
+            is_live = True
+        else:
+            is_live = False
         
-        # Initialize cash to config.CASH
-        cash = config.CASH
+        stocks = config.CRYPTO
+        
+        print('cryptos:', stocks, end='\n\n')
+        
+        if config.MODE == 'BACKTEST':
+            crypto_historicals = download_backtest_data(stocks)
+            
+            # For tr.determine_trade(), need times and prices to be of length >= (macd_slow_period + macd_signal_period - 1) = 34
+            # Therefore, backtest_index starts at 33 and is then iteratively incremented by 1 for each iteration until backtest_index == len(crypto_historicals[n])
+            initial_backtest_index = 33
+            
+            backtest_index = initial_backtest_index
+            
+            total_iteration_num = convert_time_to_sec(config.SPAN) // convert_time_to_sec(config.INTERVAL) - initial_backtest_index
+        
+        cash, equity = get_cash()
     
-    assert initial_capital > 0
+        tr = trader.Trader(stocks)
     
-    if is_live:
-        outgoing_order_queue, filled_orders = [], []
-    
-    if config.PLOTPORTFOLIO:
-        time_data, portfolio_data = [], []
-    
-    iteration_num = 1
-    
-    while tr.continue_trading():
-        try:
+        trade_dict = {stocks[i]: 0 for i in range(0, len(stocks))}
+        price_dict = {stocks[i]: 0 for i in range(0, len(stocks))}
+        
+        df_trades = pd.DataFrame(columns=stocks)
+        df_prices = pd.DataFrame(columns=stocks)
+        
+        # Initialization of holdings and bought price (necessary to be here due to different modes and cash initializations)
+        holdings, bought_price = get_holdings_and_bought_price(stocks)
+        
+        # Initialization of initial_capital and cash (if necessary)
+        # This initialization needs to be here due to different modes and cash initializations
+        if config.USECASH == False or is_live:
+            
+            initial_capital = get_crypto_holdings_capital(holdings) + cash
+        else:
+            initial_capital = config.CASH
+            
+            # Initialize cash to config.CASH
+            cash = config.CASH
+        
+        assert initial_capital > 0
+        
+        if is_live:
+            outgoing_order_queue, filled_orders = [], []
+        
+        if config.PLOTPORTFOLIO:
+            time_data, portfolio_data = [], []
+        
+        iteration_num = 1
+        
+        while tr.continue_trading():
+            if config.MODE == 'BACKTEST':
+                if backtest_index >= len(crypto_historicals[0]):
+                    print("backtesting finished")
+                    
+                    break
+            
             if is_live:
                 while len(outgoing_order_queue) > 0:
                     if outgoing_order_queue[0].is_filled():
@@ -250,13 +324,19 @@ if __name__ == "__main__":
                     else:
                         break
             
-            prices = get_latest_price(stocks)
-            
-            if config.USECASH == False or is_live:
+            if config.MODE != 'BACKTEST':
+                prices = get_latest_price(stocks)
+            else:
+                prices = []
                 
-                holdings, bought_price = get_holdings_and_bought_price(stocks)
+                for i in range(len(stocks)):
+                    prices += [crypto_historicals[i][backtest_index]['close_price']]
             
             if config.USECASH == False or is_live:
+                # Update holdings and bought_price
+                holdings, bought_price = get_holdings_and_bought_price(stocks)
+                
+                # Update cash and equity
                 cash, equity = get_cash()
             else:
                 # Update only equity
@@ -266,7 +346,10 @@ if __name__ == "__main__":
             
             percent_change = tr.get_profit() * 100 / initial_capital
             
-            update_output(iteration_num, tr, equity, holdings, cash, percent_change)
+            if config.MODE == 'BACKTEST':
+                update_output(iteration_num, tr, equity, holdings, cash, percent_change, total_iteration_num)
+            else:
+                update_output(iteration_num, tr, equity, holdings, cash, percent_change)
             
             if config.PLOTPORTFOLIO:
                 time_data += [tr.get_runtime()]
@@ -279,13 +362,17 @@ if __name__ == "__main__":
                 price = float(prices[i])
                 
                 print('\n{} = ${}'.format(stock, price))
-    
-                trade = tr.determine_trade(stock)
+                
+                if config.MODE != 'BACKTEST':
+                    trade = tr.determine_trade(stock)
+                else:
+                    trade = tr.determine_trade(stock, crypto_historicals[i][:backtest_index+1])
                 
                 print('trade:', trade, end='\n\n')
                 
                 if trade == "BUY":
-                    price = round(float(get_latest_price([stock])[0]), 2)
+                    if config.MODE != 'BACKTEST':
+                        price = round(float(get_latest_price([stock])[0]), 2)
                     
                     if cash > 0:
                         
@@ -339,7 +426,8 @@ if __name__ == "__main__":
                         
                         # https://robin-stocks.readthedocs.io/en/latest/robinhood.html#placing-and-cancelling-orders
                         
-                        price = round(float(get_latest_price([stock])[0]), 2)
+                        if config.MODE != 'BACKTEST':
+                            price = round(float(get_latest_price([stock])[0]), 2)
                         
                         holdings_to_sell = holdings[stock] / 5.0
                         
@@ -393,22 +481,38 @@ if __name__ == "__main__":
             print('\ndf_prices \n', df_prices, end='\n\n')
             print('df_trades \n', df_trades, end='\n\n')
             
-            print("Waiting " + str(tr.get_interval_sec()) + ' seconds...')
-            print("======================" + "="*len("ITERATION " + str(iteration_num)) + "======================", end='\n\n')
+            if config.MODE != 'BACKTEST':
+                print("Waiting " + str(convert_time_to_sec(tr.get_interval())) + ' seconds...')
+            
+                print("======================" + "="*len("ITERATION " + str(iteration_num)) + "======================", end='\n\n')
+                
+                time.sleep(convert_time_to_sec(tr.get_interval()))
+            else:
+                print("======================" + "="*len("ITERATION " + str(iteration_num) + '/' + str(total_iteration_num)) + "======================", end='\n\n')
+                
+                backtest_index += 1
             
             iteration_num += 1
-            
-            time.sleep(tr.get_interval_sec())
         
-        except KeyboardInterrupt:
-            break
+        logout()
         
-        except Exception:
-            print("An error occured: stopping process")
-            
-            break
-
-    logout()
+        if config.EXPORTCSV:
+            rh.export.export_completed_crypto_orders('./', 'completed_crypto_orders')
     
-    if config.EXPORTCSV:
-        rh.export.export_completed_crypto_orders('./', 'completed_crypto_orders')
+    except KeyboardInterrupt:
+        print("User ended execution of program.")
+        
+        logout()
+        
+        if config.EXPORTCSV:
+            rh.export.export_completed_crypto_orders('./', 'completed_crypto_orders')
+    
+    except Exception:
+        print("An error occured: stopping process")
+        
+        logout()
+        
+        if config.EXPORTCSV:
+            rh.export.export_completed_crypto_orders('./', 'completed_crypto_orders')
+        
+        print("Error message:", sys.exc_info())

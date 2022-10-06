@@ -15,7 +15,18 @@ PLOTANALYTICS = False
 PLOTPORTFOLIO = True
 
 # The mode to run the autotrader, available modes are 'LIVE', 'BACKTEST', and 'SAFELIVE'
-MODE = 'SAFELIVE'
+MODE = 'BACKTEST'
+
+#------------------FOR 'BACKTEST' MODE ONLY---------------------------------
+# 'INTERVAL', 'SPAN', and 'BOUNDS' used for retreiving historical crypto data for backtesting
+
+INTERVAL = '15second'
+
+SPAN = 'hour'
+
+BOUNDS = '24_7'
+
+#--------------------------------------------------------------------
 
 # Initial capital to start the backtesting with (optional: only for 'BACKTEST' and possibly 'SAFELIVE' modes)
 CASH = 1000.00
