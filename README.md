@@ -49,13 +49,13 @@ CRYPTO = ['BTC','ETH']
 ```
 
 #### Interval options are
-['15second', '5minute', '10minute', 'hour', 'day', 'week']
+`['15second', '5minute', '10minute', 'hour', 'day', 'week']`
 
 #### Span options are
-['hour', 'day', 'week', 'month', '3month', 'year', '5year']
+`['hour', 'day', 'week', 'month', '3month', 'year', '5year']`
 
 #### Bounds options are
-['Regular', 'trading', 'extended', '24_7']
+`['Regular', 'trading', 'extended', '24_7']`
 
 #### Cryptocurrency options are 
 - `BTC` for Bitcoin
