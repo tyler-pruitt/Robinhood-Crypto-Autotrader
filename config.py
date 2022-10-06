@@ -12,7 +12,7 @@ EXPORTCSV = False
 PLOTANALYTICS = False
 
 # Plot graph of portfolio while running? (BOOLEAN), must be either True of False
-PLOTPORTFOLIO = True
+PLOTPORTFOLIO = False
 
 # The mode to run the autotrader, available modes are 'LIVE', 'BACKTEST', and 'SAFELIVE'
 MODE = 'BACKTEST'
@@ -26,7 +26,7 @@ SPAN = 'hour'
 
 BOUNDS = '24_7'
 
-#--------------------------------------------------------------------
+#---------------------------------------------------------------------------
 
 # Initial capital to start the backtesting with (optional: only for 'BACKTEST' and possibly 'SAFELIVE' modes)
 CASH = 1000.00

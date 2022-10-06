@@ -36,7 +36,7 @@ SPAN = 'hour'
 
 BOUNDS = '24_7'
 
-#--------------------------------------------------------------------
+#---------------------------------------------------------------------------
 
 # Initial capital to start the backtesting with (optional: only for 'BACKTEST' and possibly 'SAFELIVE' modes)
 CASH = 1000.00

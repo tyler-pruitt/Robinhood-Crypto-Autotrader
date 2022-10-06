@@ -242,6 +242,11 @@ def check_config():
         assert type(config.BOUNDS) == str
         
         assert config.BOUNDS in bounds
+        
+        assert config.USECASH == True
+    elif config.MODE == 'LIVE':
+        
+        assert config.USECASH == False
     
     print("configuration test: PASSED")
 
