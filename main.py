@@ -161,7 +161,7 @@ def display_holdings(holdings):
         
         print('\t' + str(amount) + ' ' + crypto + " at $" + str(rh.get_crypto_quote(crypto)['mark_price']))
 
-def update_output(iteration_num, tr, equity, holdings, cash, percent_change, total_iteration_num=None):
+def update_output(iteration_num, tr, equity, holdings, cash, total_iteration_num=None):
     """
     Prints out the lastest information out to consol
     """
@@ -183,7 +183,7 @@ def update_output(iteration_num, tr, equity, holdings, cash, percent_change, tot
     print("cash: $" + str(cash))
     print("total crypto equity and cash: $" + str(cash + get_crypto_holdings_capital(holdings)))
     
-    print("profit: " + tr.display_profit() + " (" + tr.display_profit()[0] + str(round(abs(percent_change), 2)) + "%)")
+    print("profit: " + tr.display_profit() + " (" + tr.display_percent_change() + ")")
 
 def download_backtest_data(stocks):
     
@@ -282,8 +282,6 @@ if __name__ == "__main__":
         
         cash, equity = get_cash()
     
-        tr = trader.Trader(stocks)
-    
         trade_dict = {stocks[i]: 0 for i in range(0, len(stocks))}
         price_dict = {stocks[i]: 0 for i in range(0, len(stocks))}
         
@@ -305,6 +303,8 @@ if __name__ == "__main__":
             cash = config.CASH
         
         assert initial_capital > 0
+        
+        tr = trader.Trader(stocks, initial_capital)
         
         if is_live:
             outgoing_order_queue, filled_orders = [], []
@@ -351,12 +351,10 @@ if __name__ == "__main__":
             
             tr.set_profit(cash + get_crypto_holdings_capital(holdings) - initial_capital)
             
-            percent_change = tr.get_profit() * 100 / initial_capital
-            
             if config.MODE == 'BACKTEST':
-                update_output(iteration_num, tr, equity, holdings, cash, percent_change, total_iteration_num)
+                update_output(iteration_num, tr, equity, holdings, cash, total_iteration_num)
             else:
-                update_output(iteration_num, tr, equity, holdings, cash, percent_change)
+                update_output(iteration_num, tr, equity, holdings, cash)
             
             if config.PLOTPORTFOLIO:
                 time_data += [tr.get_runtime()]

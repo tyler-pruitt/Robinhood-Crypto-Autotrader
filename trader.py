@@ -15,8 +15,10 @@ import robin_stocks.helper as helper
 import robin_stocks.urls as urls
 
 class Trader():
-    def __init__(self, stocks):
+    def __init__(self, stocks, initial_capital):
         self.stocks = stocks
+        
+        self.initial_capital = initial_capital
         
         self.start_time = t.time()
 
@@ -31,6 +33,7 @@ class Trader():
         self.span = "hour"
         
         self.profit = 0.0
+        self.percent_change = 0.0
         
         self.trade = ''
         self.previous_trade = ''
@@ -48,6 +51,9 @@ class Trader():
         
         assert self.profit == 0.0
     
+    def get_percent_change(self):
+        return self.percent_change
+    
     def get_overbought_threshold(self):
         return self.overbought
     
@@ -61,7 +67,7 @@ class Trader():
         self.oversold = threshold
     
     def __repr__(self):
-        return "Trader(profit: " + self.display_profit() + ", runtime: " + self.display_time(self.get_runtime()) + ")"
+        return "Trader(profit: " + self.display_profit() + " (" + self.display_percent_change() + "), runtime: " + self.display_time(self.get_runtime()) + ")"
     
     def continue_trading(self, override=None):
         if override != None:
@@ -123,7 +129,12 @@ class Trader():
         return t.time() - self.start_time
 
     def set_profit(self, profit):
+        """
+        Sets Trader.profit and Trader.percent_change accordingly
+        """
         self.profit = profit
+        
+        self.percent_change = (profit * 100) / self.initial_capital
     
     def get_profit(self):
         return self.profit
@@ -138,6 +149,18 @@ class Trader():
         text += currency
 
         text += str(abs(round(self.profit, 2)))
+
+        return text
+    
+    def display_percent_change(self):
+
+        if self.percent_change >= 0:
+            text = '+'
+        else:
+            text = '-'
+
+        text += str(abs(round(self.percent_change, 2)))
+        text += '%'
 
         return text
     
