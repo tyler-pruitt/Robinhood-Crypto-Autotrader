@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import datetime as dt
-import time
+import time as t
 import matplotlib.pyplot as plt
 import matplotlib.dates as dates
 import warnings
@@ -18,7 +18,7 @@ class Trader():
     def __init__(self, stocks):
         self.stocks = stocks
         
-        self.start_time = time.time()
+        self.start_time = t.time()
 
         # Loss threshold (in dollars) taken to be a positive value
         self.loss_threshold = 50.00
@@ -34,6 +34,11 @@ class Trader():
         
         self.trade = ''
         self.previous_trade = ''
+        
+        # self.buy_times = [{datetime: 'status'}]
+        # status possibilities arew ['live_buy', 'simulated_buy', 'unable_to_buy', 'live_sell', 'simulated_sell', unable_to_sell']
+        self.buy_times = [dict()] * len(stocks)
+        self.sell_times = [dict()] * len(stocks)
         
         assert self.loss_threshold >= 0
         
@@ -115,7 +120,7 @@ class Trader():
             print("Loss must be set to a POSITIVE value: loss threshold not reset")
     
     def get_runtime(self):
-        return time.time() - self.start_time
+        return t.time() - self.start_time
 
     def set_profit(self, profit):
         self.profit = profit
@@ -249,7 +254,10 @@ class Trader():
             macd_signal_indicator = "HOLD"
         
         if config.PLOTANALYTICS:
-            self.plot_analytics(stock, prices, times, macd, signal, macd_signal_difference, rsi_data)
+            self.plot_analytics(stock, macd, signal, macd_signal_difference, rsi_data)
+        
+        if config.PLOTCRYPTO:
+            self.plot_crypto(stock, prices, times)
         
         if rsi_indicator == "BUY" and macd_signal_indicator == "BUY":
             
@@ -268,13 +276,58 @@ class Trader():
 
         return self.get_trade()
     
-    def plot_stock(self, stock, prices, price_times, pause=1):
+    def plot_crypto(self, stock, prices, price_times, pause=1):
+        # RGBA: [red, green, blue, alpha]
+        """
+        status_to_color = {
+            'live_buy': dark_red,
+            'simulated_buy': light_red,
+            'unable_to_buy': yellow,
+            'live_sell': dark_green,
+            'simulated_sell': light_green,
+            'unable_to_sell': blue
+        }
+        """
+        status_to_color = {'live_buy': [1, 0, 0, 1], 'simulated_buy': [1, 0, 0, 0.5], 'unable_to_buy': [1, 1, 0, 1], 'live_sell': [0, 1, 0, 1], 'simulated_sell': [0, 1, 0, 0.5], 'unable_to_sell': [0, 0, 1, 1]}
+        
+        buy_x, buy_y, buy_color = [], [], []
+        sell_x, sell_y, sell_color = [], [], []
         
         for i in range(len(price_times)):
             price_times[i] = self.convert_timestamp_to_datetime(price_times[i])
         
+        for time, status in self.buy_times[self.stocks.index(stock)].items():
+            
+            min_abs_distance, min_index = dt.timedelta(days=9999), 0
+            
+            for i in range(len(price_times)):
+                if abs(price_times[i] - time) < min_abs_distance:
+                    min_abs_distance = abs(price_times[i] - time)
+                    min_index = i
+            
+            buy_x += [price_times[min_index]]
+            buy_y += [prices[min_index]]
+            buy_color += [status_to_color[status]]
+        
+        for time, status in self.sell_times[self.stocks.index(stock)].items():
+            min_abs_distance, min_index = dt.timedelta(days=9999), 0
+            
+            for i in range(len(price_times)):
+                if abs(price_times[i] - time) < min_abs_distance:
+                    min_abs_distance = abs(price_times[i] - time)
+                    min_index = i
+            
+            sell_x += [price_times[min_index]]
+            sell_y += [prices[min_index]]
+            sell_color += [status_to_color[status]]
+        
         plt.figure(clear=True)
         plt.plot_date(price_times, prices, 'g-')
+        
+        # https://matplotlib.org/stable/api/markers_api.html#module-matplotlib.markers
+        plt.scatter(x=buy_x, y=buy_y, c=buy_color)
+        plt.scatter(x=sell_x, y=sell_y, c=sell_color)
+        
         plt.title(stock)
         plt.ylabel("Price ($)")
         plt.xlabel("Time")
@@ -349,8 +402,7 @@ class Trader():
         plt.show()
         plt.pause(pause)
     
-    def plot_analytics(self, stock, prices, price_times, macd, signal, macd_signal_difference, rsi, pause=1):
-        self.plot_stock(stock, prices, price_times)
+    def plot_analytics(self, stock, macd, signal, macd_signal_difference, rsi):
         self.plot_macd_signal(stock, macd, signal)
         self.plot_macd_signal_difference(stock, macd_signal_difference)
         self.plot_rsi(stock, rsi)

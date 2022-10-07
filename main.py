@@ -210,6 +210,8 @@ def check_config():
 
     assert type(config.PLOTANALYTICS) == bool
     
+    assert type(config.PLOTCRYPTO) == bool
+    
     assert type(config.PLOTPORTFOLIO) == bool
 
     assert type(config.CRYPTO) == list and len(config.CRYPTO) > 0
@@ -402,10 +404,14 @@ if __name__ == "__main__":
                                 outgoing_order_queue.append(order.Order(order_info))
                                 
                                 print("Order info:", order_info)
+                                
+                                tr.buy_times[i][dt.datetime.now()] = 'live_buy'
                             else:
                                 print("Orders are still in queue: order is canceled")
                                 
                                 trade = "UNABLE TO BUY (ORDERS STILL IN QUEUE)"
+                                
+                                tr.buy_times[i][dt.datetime.now()] = 'unable_to_buy'
                             
                         else:
                             print(config.MODE + ": live buy order is not going through")
@@ -421,11 +427,21 @@ if __name__ == "__main__":
                             holdings[stock] += holdings_to_add
                             
                             trade = "SIMULATION BUY"
+                            
+                            if config.MODE == 'SAFELIVE':
+                                tr.buy_times[i][dt.datetime.now()] = 'simulated_buy'
+                            else:
+                                tr.buy_times[i][tr.convert_timestamp_to_datetime(crypto_historicals[i][backtest_index]['begins_at'])] = 'simulated_buy'
     
                     else:
                         print("Not enough cash")
                         
                         trade = "UNABLE TO BUY (NOT ENOUGH CASH)"
+                        
+                        if config.MODE != 'BACTEST':
+                            tr.buy_times[i][dt.datetime.now()] = 'unable_to_buy'
+                        else:
+                            tr.buy_times[i][tr.convert_timestamp_to_datetime(crypto_historicals[i][backtest_index]['begins_at'])] = 'unable_to_buy'
                 elif trade == "SELL":
                     if holdings[stock] > 0:
                         
@@ -453,10 +469,17 @@ if __name__ == "__main__":
                                 outgoing_order_queue.append(order.Order(order_info))
                                 
                                 print("Order info:", order_info)
+                                
+                                tr.sell_times[i][dt.datetime.now()] = 'live_sell'
                             else:
                                 print("Orders are still in queue: order is canceled")
                                 
                                 trade = "UNABLE TO SELL (ORDERS STILL IN QUEUE)"
+                                
+                                if config.MODE == 'SAFELIVE':
+                                    tr.sell_times[i][dt.datetime.now()] = 'unable_to_sell'
+                                else:
+                                    tr.sell_times[i][tr.convert_timestamp_to_datetime(crypto_historicals[i][backtest_index]['begins_at'])] = 'unable_to_sell'
                             
                         else:
                             print(config.MODE + ": live sell order is not going through")
@@ -471,11 +494,21 @@ if __name__ == "__main__":
                                 bought_price[stock] = 0
                             
                             trade = "SIMULATION SELL"
+                            
+                            if config.MODE == 'SAFELIVE':
+                                tr.sell_times[i][dt.datetime.now()] = 'simulated_sell'
+                            else:
+                                tr.sell_times[i][tr.convert_timestamp_to_datetime(crypto_historicals[i][backtest_index]['begins_at'])] = 'simulated_sell'
                         
                     else:
                         print("Not enough holdings")
     
                         trade = "UNABLE TO SELL (NOT ENOUGH HOLDINGS)"
+                        
+                        if config.MODE != 'BACKTEST':
+                            tr.sell_times[i][dt.datetime.now()] = 'unable_to_sell'
+                        else:
+                            tr.sell_times[i][tr.convert_timestamp_to_datetime(crypto_historicals[i][backtest_index]['begins_at'])] = 'unable_to_sell'
                 
                 price_dict[stock] = price
                 

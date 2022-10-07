@@ -21,11 +21,14 @@ EXPORTCSV = False
 # Plot analytical graphs while running? (BOOLEAN), must be either True or False
 PLOTANALYTICS = False
 
+# Plot graph of crypto price while running? (BOOLEAN), must be either True or False
+PLOTCRYPTO = True
+
 # Plot graph of portfolio while running? (BOOLEAN), must be either True of False
-PLOTPORTFOLIO = True
+PLOTPORTFOLIO = False
 
 # The mode to run the autotrader, available modes are 'LIVE', 'BACKTEST', and 'SAFELIVE'
-MODE = 'BACKTEST'
+MODE = 'SAFELIVE'
 
 #------------------FOR 'BACKTEST' MODE ONLY---------------------------------
 # 'INTERVAL', 'SPAN', and 'BOUNDS' used for retreiving historical crypto data for backtesting
