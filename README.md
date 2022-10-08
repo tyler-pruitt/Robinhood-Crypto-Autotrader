@@ -60,7 +60,9 @@ CRYPTO = ['BTC','ETH']
 #### Bounds options are
 `['Regular', 'trading', 'extended', '24_7']`
 
-#### Cryptocurrency options are 
+#### Cryptocurrency options can be found here: https://robinhood.com/lists/robinhood/97b746a5-bc2f-4c64-a828-1af0fc399bf9
+##### TL;DR
+Note: this list may be outdated, please use the link for the most up-to-date information (last updated: October 7th, 2022)
 - `BTC` for Bitcoin
 - `ETH` for Ethereum
 - `ETC` for Ethereum Classic
