@@ -216,6 +216,9 @@ def check_config():
 
     assert type(config.CRYPTO) == list and len(config.CRYPTO) > 0
     
+    # Use rh.crypto.get_crypto_currency_pairs(info=None) for 'pairs' so that it is up-to-date
+    # 'pairs' last updated October 9th, 2022
+    
     pairs = ['BTC','ETH','ETC','BCH','BSV','LTC','DOGE','SHIB','SOL','MATIC','COMP','LINK','UNI','XLM','AVAX','ADA','USDC']
     
     for i in range(len(config.CRYPTO)):
