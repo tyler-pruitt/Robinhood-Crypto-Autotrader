@@ -60,9 +60,10 @@ class Order():
     def __repr__(self):
         return self.id
     
-    def update(self):
+    def update(self, new_order_info=None):
         
-        new_order_info = rh.orders.get_crypto_order_info(self.id)
+        if new_order_info == None:
+            new_order_info = rh.orders.get_crypto_order_info(self.id)
         
         self.account_id = new_order_info['account_id']
         self.average_price = new_order_info['average_price']
