@@ -93,6 +93,9 @@ class Order():
         
         self.update(updated_order_info)
     
+    def cancel_all(self):
+        rh.orders.cancel_all_crypto_orders()
+    
     def is_filled(self):
         if self.state == "filled":
             return True
