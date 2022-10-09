@@ -49,7 +49,7 @@ class Trader():
         
         assert self.overbought >= 0 and self.overbought <= 100
         
-        assert self.profit == 0.0
+        assert self.profit == 0.0 and self.percent_change == 0.0
     
     def get_percent_change(self):
         return self.percent_change
@@ -231,6 +231,14 @@ class Trader():
         return data
 
     def determine_trade(self, stock, stock_historicals=None):
+        """
+        Determines whether the trade is a 'BUY', 'SELL', or 'HOLD'
+        
+        If both RSI and MACD are cross their respective thresholds, then either buy or sell
+        Else hold
+        
+        Consider using bollinger bands instead
+        """
         
         if config.MODE == 'BACKTEST':
             assert stock_historicals != None
