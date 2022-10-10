@@ -20,7 +20,7 @@ def login():
                             expiresIn=time_logged_in,
                             scope='internal',
                             by_sms=True,
-                            store_session=True)
+                            store_session=False)
     
     print("login successful")
 
