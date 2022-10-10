@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import numpy as np
+
 def MA(times, prices, period):
     """
     Moving Average
@@ -99,3 +101,18 @@ def MACD(times, prices, fast_period, slow_period, signal_period):
     signal = EMA(macd_times, macd_values, signal_period)
     
     return macd, signal
+
+def BOLL(times, prices, period=20, std_width=2):
+    """
+    Bollinger bands
+    """
+    moving_average = MA(times, prices, period)
+    
+    boll = []
+    
+    for i in range(len(moving_average)):
+        std = np.std(prices[i:i+20])
+        
+        boll += [{'time': moving_average[i][0], 'moving_average': moving_average[i][1], 'upper_band': moving_average[i][1] + (std * std_width), 'lower_band': moving_average[i][1] - (std * std_width)}]
+    
+    return boll

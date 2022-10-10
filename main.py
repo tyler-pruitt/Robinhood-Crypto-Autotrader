@@ -42,7 +42,7 @@ def plot_portfolio(time, portfolio):
     plt.plot(time, portfolio, 'g-')
     plt.title("Portfolio (cash + crypto equity)")
     plt.xlabel("Runtime (in seconds)")
-    plt.ylabel("Value (in USD)")
+    plt.ylabel("Price ($)")
     plt.show()
 
 def build_dataframes(df_trades, trade_dict, df_prices, price_dict):
@@ -281,9 +281,11 @@ if __name__ == "__main__":
         if config.MODE == 'BACKTEST':
             crypto_historicals = download_backtest_data(stocks)
             
-            # For tr.determine_trade(), need times and prices to be of length >= (macd_slow_period + macd_signal_period - 1) = 34
-            # Therefore, backtest_index starts at 33 and is then iteratively incremented by 1 for each iteration until backtest_index == len(crypto_historicals[n])
-            initial_backtest_index = 33
+            # Set initial_backtest_index to 33 (33 = macd_slow_period + macd_signal_period) for tr.determine_trade_macd_rsi()
+            # Set initial_backtest_index to 19 (19 = period + 1) for tr.determine_trade_boll()
+            
+            #initial_backtest_index = 33
+            initial_backtest_index = 19
             
             backtest_index = initial_backtest_index
             
@@ -323,7 +325,20 @@ if __name__ == "__main__":
         
         iteration_num = 1
         
+        if config.MODE != 'BACKTEST':
+            average_iteration_runtime = 0
+        
+        cash_divisor, holdings_divisor = 5, 5
+        
+        if cash_divisor < len(stocks):
+            cash_divisor = len(stocks)
+        
+        if holdings_divisor < len(stocks):
+            holdings_divisor = len(stocks)
+        
         while tr.continue_trading():
+            iteration_runtime_start = time.time()
+            
             if config.MODE == 'BACKTEST':
                 if backtest_index >= len(crypto_historicals[0]):
                     print("backtesting finished")
@@ -378,9 +393,13 @@ if __name__ == "__main__":
                 print('\n{} = ${}'.format(stock, price))
                 
                 if config.MODE != 'BACKTEST':
-                    trade = tr.determine_trade(stock)
+                    #trade = tr.determine_trade_macd_rsi(stock)
+                    
+                    trade = tr.determine_trade_boll(stock)
                 else:
-                    trade = tr.determine_trade(stock, crypto_historicals[i][:backtest_index+1])
+                    #trade = tr.determine_trade_macd_rsi(stock, crypto_historicals[i][:backtest_index+1])
+                    
+                    trade = tr.determine_trade_boll(stock, crypto_historicals[i][:backtest_index+1])
                 
                 print('trade:', trade, end='\n\n')
                 
@@ -392,7 +411,7 @@ if __name__ == "__main__":
                         
                         # https://robin-stocks.readthedocs.io/en/latest/robinhood.html#placing-and-cancelling-orders
                         
-                        dollars_to_sell = cash / 5.0
+                        dollars_to_sell = cash / cash_divisor
                         
                         print('Attempting to BUY ${} of {} at price ${}'.format(dollars_to_sell, stock, price))
                         
@@ -457,7 +476,7 @@ if __name__ == "__main__":
                         if config.MODE != 'BACKTEST':
                             price = round(float(get_latest_price([stock])[0]), 2)
                         
-                        holdings_to_sell = holdings[stock] / 5.0
+                        holdings_to_sell = holdings[stock] / holdings_divisor
                         
                         print('Attempting to SELL {} of {} at price ${} for ${}'.format(holdings_to_sell, stock, price, round(holdings_to_sell * price, 2)))
     
@@ -527,13 +546,31 @@ if __name__ == "__main__":
             print('df_trades \n', df_trades, end='\n\n')
             
             if config.MODE != 'BACKTEST':
-                print("Waiting " + str(convert_time_to_sec(tr.get_interval())) + ' seconds...')
-            
-                print("======================" + "="*len("ITERATION " + str(iteration_num)) + "======================", end='\n\n')
+                iteration_runtime_end = time.time()
                 
-                time.sleep(convert_time_to_sec(tr.get_interval()))
+                if average_iteration_runtime == 0:
+                    
+                    average_iteration_runtime = iteration_runtime_end - iteration_runtime_start
+                else:
+                    # Update average_iteration_runtime
+                    average_iteration_runtime *= iteration_num
+                    
+                    average_iteration_runtime += (iteration_runtime_end - iteration_runtime_start)
+                
+                    average_iteration_runtime /= (iteration_num + 1)
+                
+                wait_time = convert_time_to_sec(tr.get_interval()) - average_iteration_runtime
+                
+                if wait_time < 0:
+                    wait_time = 0
+                
+                print("Waiting " + str(round(wait_time, 2)) + ' seconds...')
+            
+                print("======================" + "="*len("ITERATION " + str(iteration_num)) + "======================")
+                
+                time.sleep(wait_time)
             else:
-                print("======================" + "="*len("ITERATION " + str(iteration_num) + '/' + str(total_iteration_num)) + "======================", end='\n\n')
+                print("======================" + "="*len("ITERATION " + str(iteration_num) + '/' + str(total_iteration_num)) + "======================")
                 
                 backtest_index += 1
             
