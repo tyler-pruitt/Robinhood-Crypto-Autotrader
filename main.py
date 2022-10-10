@@ -216,10 +216,16 @@ def check_config():
 
     assert type(config.CRYPTO) == list and len(config.CRYPTO) > 0
     
-    # Use rh.crypto.get_crypto_currency_pairs(info=None) for 'pairs' so that it is up-to-date
-    # 'pairs' last updated October 9th, 2022
+    # Use rh.crypto.get_crypto_currency_pairs() for 'pairs' so that it is up-to-date
     
-    pairs = ['BTC','ETH','ETC','BCH','BSV','LTC','DOGE','SHIB','SOL','MATIC','COMP','LINK','UNI','XLM','AVAX','ADA','USDC']
+    crypto_pair_data = rh.crypto.get_crypto_currency_pairs()
+    
+    pairs = []
+    
+    for i in range(len(crypto_pair_data)):
+        if crypto_pair_data[i]['tradability'] == 'tradable':
+            pairs += [crypto_pair_data[i]['asset_currency']['code']]
+            pairs += [crypto_pair_data[i]['symbol']]
     
     for i in range(len(config.CRYPTO)):
         assert config.CRYPTO[i] in pairs
