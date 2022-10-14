@@ -344,6 +344,10 @@ if __name__ == "__main__":
                     print("backtesting finished")
                     
                     break
+                elif backtest_index > len(crypto_historicals[0]):
+                    print("not enough backtesting data to perform calculations")
+                    
+                    break
             
             if is_live:
                 while len(outgoing_order_queue) > 0:
