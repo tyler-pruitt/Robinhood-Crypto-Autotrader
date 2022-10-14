@@ -340,7 +340,7 @@ if __name__ == "__main__":
             iteration_runtime_start = time.time()
             
             if config.MODE == 'BACKTEST':
-                if backtest_index >= len(crypto_historicals[0]):
+                if backtest_index == len(crypto_historicals[0]):
                     print("backtesting finished")
                     
                     break
