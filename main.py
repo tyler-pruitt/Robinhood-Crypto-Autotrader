@@ -569,13 +569,9 @@ if __name__ == "__main__":
                     wait_time = 0
                 
                 print("Waiting " + str(round(wait_time, 2)) + ' seconds...')
-            
-                print("======================" + "="*len("ITERATION " + str(iteration_num)) + "======================")
                 
                 time.sleep(wait_time)
             else:
-                print("======================" + "="*len("ITERATION " + str(iteration_num) + '/' + str(total_iteration_num)) + "======================")
-                
                 backtest_index += 1
             
             iteration_num += 1
