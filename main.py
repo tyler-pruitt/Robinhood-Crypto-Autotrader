@@ -320,7 +320,7 @@ if __name__ == "__main__":
         tr = trader.Trader(stocks, initial_capital)
         
         if is_live:
-            outgoing_order_queue, filled_orders = [], []
+            orders = []
         
         if config.PLOTPORTFOLIO:
             time_data, portfolio_data = [], []
@@ -350,16 +350,6 @@ if __name__ == "__main__":
                     print("not enough backtesting data to perform calculations")
                     
                     break
-            
-            if is_live:
-                while len(outgoing_order_queue) > 0:
-                    if outgoing_order_queue[0].is_filled():
-    
-                        filled_orders.append(outgoing_order_queue[0])
-    
-                        outgoing_order_queue.pop(0)
-                    else:
-                        break
             
             if config.MODE != 'BACKTEST':
                 prices = get_latest_price(stocks)
@@ -424,7 +414,7 @@ if __name__ == "__main__":
                         if is_live:
                             print("LIVE: Buy order is going through")
     
-                            if len(outgoing_order_queue) == 0:
+                            if len(order.Order().get_all_open_orders()) == 0:
                                 print("No orders still in queue: new order will execute")
     
                                 # Limit order by price
@@ -433,7 +423,7 @@ if __name__ == "__main__":
                                 # Market order
                                 order_info = rh.orders.order_buy_crypto_by_price(symbol=stock, amountInDollars=dollars_to_sell, timeInForce='gtc', jsonify=True)
                                 
-                                outgoing_order_queue += [order.Order(order_info)]
+                                orders += [order.Order(order_info)]
                                 
                                 print("Order info:", order_info)
                                 
@@ -489,7 +479,7 @@ if __name__ == "__main__":
                         if is_live:
                             print("LIVE: Sell order is going through")
     
-                            if len(outgoing_order_queue) == 0:
+                            if len(order.Order().get_all_open_orders()) == 0:
                                 print("No orders still in queue: new order will execute")
     
                                 # Limit order by price for a set quantity
@@ -498,7 +488,7 @@ if __name__ == "__main__":
                                 # Market order
                                 order_info = rh.orders.order_sell_crypto_by_quantity(symbol=stock, quantity=holdings_to_sell, timeInForce='gtc', jsonify=True)
                                 
-                                outgoing_order_queue += [order.Order(order_info)]
+                                orders += [order.Order(order_info)]
                                 
                                 print("Order info:", order_info)
                                 
