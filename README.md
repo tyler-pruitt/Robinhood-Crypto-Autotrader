@@ -1,6 +1,9 @@
 # Robinhood-Crypto-Autotrader
 An automated trader for crypto on Robinhood
 
+## New to Robinhood?
+Join Robinhood with my link and we'll both pick our own free stock 🤝 https://join.robinhood.com/tylerp5773
+
 ## To run the code:
 ### 1. place all files in the same folder 
 ### 2. place your Robinhood USERNAME, PASSWORD, and CRYPTO to trade in "config.py"
