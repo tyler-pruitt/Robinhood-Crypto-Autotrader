@@ -33,7 +33,6 @@ class Trader():
         self.percent_change = 0.0
         
         self.trade = ''
-        self.previous_trade = ''
         
         # self.buy_times = [{datetime: 'status'}]
         # status possibilities arew ['live_buy', 'simulated_buy', 'unable_to_buy', 'live_sell', 'simulated_sell', unable_to_sell']
@@ -107,12 +106,6 @@ class Trader():
     def get_trade(self):
         return self.trade
     
-    def set_previous_trade(self, trade):
-        self.previous_trade = trade
-    
-    def get_previous_trade(self):
-        return self.previous_trade
-    
     def get_loss_threshold(self):
         return self.loss_threshold
     
@@ -136,14 +129,12 @@ class Trader():
     def get_profit(self):
         return self.profit
     
-    def display_profit(self, currency='$'):
+    def display_profit(self):
 
         if self.profit >= 0:
-            text = '+'
+            text = '+$'
         else:
-            text = '-'
-        
-        text += currency
+            text = '-$'
 
         text += str(abs(round(self.profit, 2)))
 
@@ -300,16 +291,11 @@ class Trader():
         
         if rsi_indicator == "BUY" and macd_signal_indicator == "BUY":
             
-            self.set_previous_trade(self.get_trade())
-            
             self.set_trade("BUY")
         elif rsi_indicator == "SELL" and macd_signal_indicator == "SELL":
             
-            self.set_previous_trade(self.get_trade())
-            
             self.set_trade("SELL")
         else:
-            self.set_previous_trade(self.get_trade())
             
             self.set_trade("HOLD")
 
@@ -352,15 +338,12 @@ class Trader():
             assert len(boll_data) == 1
         
         if boll_data[-1]['upper_band'] < prices[-1]:
-            self.set_previous_trade(self.get_trade())
             
             self.set_trade("SELL")
         elif boll_data[-1]['lower_band'] > prices[-1]:
-            self.set_previous_trade(self.get_trade())
             
             self.set_trade("BUY")
         else:
-            self.set_previous_trade(self.get_trade())
             
             self.set_trade("HOLD")
         
