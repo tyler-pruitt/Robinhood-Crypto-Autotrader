@@ -89,12 +89,40 @@ class Order():
         self.updated_at = new_order_info['updated_at']
     
     def cancel(self):
+        """
+        Cancels the order and then updates the order
+        """
         updated_order_info = rh.orders.cancel_crypto_order(self.id)
         
         self.update(updated_order_info)
     
     def cancel_all(self):
+        """
+        Cancels all open crypto orders
+        """
         rh.orders.cancel_all_crypto_orders()
+    
+    def get_all_orders(self):
+        """
+        Returns a list of orders (Order class) of all orders that have been processed for the account
+        """
+        completed_orders = rh.orders.get_all_crypto_orders()
+        
+        for i in range(len(completed_orders)):
+            completed_orders[i] = Order(completed_orders[i])
+        
+        return completed_orders
+    
+    def get_all_open_orders(self):
+        """
+        Returns a list of orders (Order class) of all orders that are still open
+        """
+        open_orders = rh.orders.get_all_open_crypto_orders()
+        
+        for i in range(len(open_orders)):
+            open_orders[i] = Order(open_orders[i])
+        
+        return open_orders
     
     def is_filled(self):
         if self.state == "filled":
