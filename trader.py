@@ -4,15 +4,12 @@ import datetime as dt
 import time as t
 import matplotlib.pyplot as plt
 import matplotlib.dates as dates
-import warnings
 import pandas_ta as ta
 
 import config
 from indicators import MA, EMA, RSI, MACD, BOLL
 
 import robin_stocks.robinhood as rh
-import robin_stocks.helper as helper
-import robin_stocks.urls as urls
 
 class Trader():
     def __init__(self, stocks, initial_capital):
@@ -51,6 +48,9 @@ class Trader():
         
         assert self.profit == 0.0 and self.percent_change == 0.0
     
+    def __repr__(self):
+        return "Trader(profit: " + self.display_profit() + " (" + self.display_percent_change() + "), runtime: " + self.display_time(self.get_runtime()) + ")"
+    
     def get_percent_change(self):
         return self.percent_change
     
@@ -65,9 +65,6 @@ class Trader():
     
     def set_oversold_threshold(self, threshold):
         self.oversold = threshold
-    
-    def __repr__(self):
-        return "Trader(profit: " + self.display_profit() + " (" + self.display_percent_change() + "), runtime: " + self.display_time(self.get_runtime()) + ")"
     
     def continue_trading(self, override=None):
         if override != None:
@@ -236,6 +233,8 @@ class Trader():
         
         If both RSI and MACD are cross their respective thresholds, then either buy or sell
         Else hold
+        
+        Runtime is much faster when config.PLOTANALYTICS = False
         """
         
         if config.MODE == 'BACKTEST':
@@ -258,7 +257,12 @@ class Trader():
             times = self.convert_dataframe_to_list(self.get_historical_times(stock, self.interval, self.span))
             prices = self.convert_dataframe_to_list(df_historical_prices, True)
         
-        rsi_data = RSI(times, prices, 14)
+        if config.PLOTANALYTICS:
+            rsi_data = RSI(times, prices, 14)
+        else:
+            rsi_data = RSI(times[-16:], prices[-16:], 14)
+            
+            assert len(rsi_data) == 1
         
         if rsi_data[-1][1] > self.get_overbought_threshold():
             rsi_indicator = "SELL"
@@ -267,8 +271,14 @@ class Trader():
         else:
             rsi_indicator = "HOLD"
         
-        macd, signal = MACD(times, prices, 12, 26, 9)
-        macd_signal_difference = []
+        if config.PLOTANALYTICS:
+            macd, signal = MACD(times, prices, 12, 26, 9)
+            macd_signal_difference = []
+        else:
+            macd, signal = MACD(times[-34:], prices[-34:], 12, 26, 9)
+            macd_signal_difference = []
+            
+            assert len(signal) == 1
         
         for i in range(len(macd)):
             for j in range(len(signal)):
@@ -310,6 +320,8 @@ class Trader():
         Determines whether the trade is a 'BUY', 'SELL', or 'HOLD'
         
         Algorithm uses bollinger bands
+        
+        Runtime is much faster when config.PLOTANALYTICS = False
         """
         
         if config.MODE == 'BACKTEST':
@@ -332,7 +344,12 @@ class Trader():
             times = self.convert_dataframe_to_list(self.get_historical_times(stock, self.interval, self.span))
             prices = self.convert_dataframe_to_list(df_historical_prices, True)
         
-        boll_data = BOLL(times, prices)
+        if config.PLOTANALYTICS:
+            boll_data = BOLL(times, prices)
+        else:
+            boll_data = BOLL(times[-20:], prices[-20:])
+            
+            assert len(boll_data) == 1
         
         if boll_data[-1]['upper_band'] < prices[-1]:
             self.set_previous_trade(self.get_trade())
@@ -355,7 +372,7 @@ class Trader():
 
         return self.get_trade()
     
-    def plot_crypto(self, stock, prices, price_times, pause=1):
+    def plot_crypto(self, stock, prices, price_times):
         # RGBA: [red, green, blue, alpha]
         """
         status_to_color = {
@@ -411,9 +428,8 @@ class Trader():
         plt.ylabel("Price ($)")
         plt.xlabel("Time")
         plt.show()
-        plt.pause(pause)
     
-    def plot_macd_signal(self, stock, macd, signal, pause=1):
+    def plot_macd_signal(self, stock, macd, signal):
         
         macd_data, macd_times = [], []
     
@@ -435,9 +451,8 @@ class Trader():
         plt.legend(["MACD", "Signal"], loc='lower left')
         plt.xlabel("Time")
         plt.show()
-        plt.pause(pause)
     
-    def plot_macd_signal_difference(self, stock, macd_signal_difference, pause=1):
+    def plot_macd_signal_difference(self, stock, macd_signal_difference):
         
         macd_signal_data, macd_signal_times = [], []
         
@@ -456,9 +471,8 @@ class Trader():
         plt.ylabel("MACD - Signal")
         plt.xlabel("Time")
         plt.show()
-        plt.pause(pause)
     
-    def plot_rsi(self, stock, rsi, pause=1):
+    def plot_rsi(self, stock, rsi):
         rsi_data, rsi_times = [], []
         
         for i in range(len(rsi)):
@@ -479,14 +493,13 @@ class Trader():
         plt.ylabel("RSI")
         plt.xlabel("Time")
         plt.show()
-        plt.pause(pause)
     
     def plot_macd_rsi_analytics(self, stock, macd, signal, macd_signal_difference, rsi):
         self.plot_macd_signal(stock, macd, signal)
         self.plot_macd_signal_difference(stock, macd_signal_difference)
         self.plot_rsi(stock, rsi)
     
-    def plot_boll_analytics(self, stock, prices, times, boll_data, pause=1):
+    def plot_boll_analytics(self, stock, prices, times, boll_data):
         upper_band, moving_average, lower_band, boll_times = [], [], [], []
         
         for i in range(len(boll_data)):
@@ -505,7 +518,6 @@ class Trader():
         plt.ylabel('Price ($)')
         plt.legend(('stock', 'upper_band', 'moving_average', 'lower_band'), loc='lower left')
         plt.show()
-        plt.pause(pause)
     
     def convert_timestamp_to_datetime(self, timestamp):
         if type(timestamp) != str:

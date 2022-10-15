@@ -58,7 +58,7 @@ class Order():
         self.updated_at = order_info['updated_at']
     
     def __repr__(self):
-        return self.id
+        return 'order_id:' + str(self.id)
     
     def update(self, new_order_info=None):
         

@@ -77,12 +77,12 @@ def get_latest_price(stocks):
 def build_holdings():
     """
     Returns {
-        'stock1': {
+        'crypto1': {
             'price': '76.24',
             'quantity': '2.00',
             'average_buy_price': '79.26',
             },
-        'stock2': {
+        'crypto2': {
             'price': '76.24',
             'quantity': '2.00',
             'average_buy_price': '79.26',
@@ -126,9 +126,11 @@ def get_holdings_and_bought_price(stocks):
 
 def convert_time_to_sec(time):
     """
-    RUNTIME IS TOO SLOW
+    Input:
+        time (str)
+    Output:
+        sec (int): time in seconds
     """
-    
     assert type(time) == str
     
     digit = 1
@@ -431,7 +433,7 @@ if __name__ == "__main__":
                                 # Market order
                                 order_info = rh.orders.order_buy_crypto_by_price(symbol=stock, amountInDollars=dollars_to_sell, timeInForce='gtc', jsonify=True)
                                 
-                                outgoing_order_queue.append(order.Order(order_info))
+                                outgoing_order_queue += [order.Order(order_info)]
                                 
                                 print("Order info:", order_info)
                                 
@@ -496,7 +498,7 @@ if __name__ == "__main__":
                                 # Market order
                                 order_info = rh.orders.order_sell_crypto_by_quantity(symbol=stock, quantity=holdings_to_sell, timeInForce='gtc', jsonify=True)
                                 
-                                outgoing_order_queue.append(order.Order(order_info))
+                                outgoing_order_queue += [order.Order(order_info)]
                                 
                                 print("Order info:", order_info)
                                 

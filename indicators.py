@@ -5,8 +5,10 @@ import numpy as np
 
 def MA(times, prices, period):
     """
-    Moving Average
+    Moving Average (MA)
     """
+    
+    assert len(times) == len(prices)
     
     ma = []
     
@@ -25,8 +27,10 @@ def MA(times, prices, period):
 
 def EMA(times, prices, period):
     """
-    Weighted Moving Average
+    Exponential Moving Average (EMA)
     """
+    
+    assert len(times) == len(prices)
     
     ema = []
     
@@ -54,6 +58,10 @@ def RSI(times, prices, period):
     Relative Strength Index (RSI)
     """
     
+    assert len(times) == len(prices)
+    assert len(times) >= period + 2
+    assert len(prices) >= period + 2
+    
     RSI = []
     
     for i in range(1, len(prices) - period):
@@ -77,8 +85,12 @@ def RSI(times, prices, period):
 
 def MACD(times, prices, fast_period, slow_period, signal_period):
     """
-    Moving Average Convergence Divergence
+    Moving Average Convergence Divergence (MACD)
     """
+    
+    assert len(times) == len(prices)
+    assert len(times) >= slow_period + signal_period - 1
+    assert len(prices) >= slow_period + signal_period - 1
     
     macd = []
     signal = []
@@ -104,14 +116,30 @@ def MACD(times, prices, fast_period, slow_period, signal_period):
 
 def BOLL(times, prices, period=20, std_width=2):
     """
-    Bollinger bands
+    Bollinger bands (BOLL)
+    
+    Returns:
+        [{'time': 'time1',
+          'moving_average': 0.397,
+          'upper_band': 0.348,
+          'lower_band': 0.299},
+         {'time': 'time2',
+          'moving_average': 0.972,
+          'upper_band': 1.000
+          'lower_band': 0.944}
+         ]
     """
+    
+    assert len(times) == len(prices)
+    assert len(times) >= period
+    assert len(prices) >= period
+    
     moving_average = MA(times, prices, period)
     
     boll = []
     
     for i in range(len(moving_average)):
-        std = np.std(prices[i:i+20])
+        std = np.std(prices[i:i+period])
         
         boll += [{'time': moving_average[i][0], 'moving_average': moving_average[i][1], 'upper_band': moving_average[i][1] + (std * std_width), 'lower_band': moving_average[i][1] - (std * std_width)}]
     
