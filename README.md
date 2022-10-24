@@ -49,7 +49,7 @@ EXPORTCSV = False
 PLOTANALYTICS = False
 
 # Plot graph of crypto price while running? (BOOLEAN), must be either True or False
-PLOTCRYPTO = True
+PLOTCRYPTO = False
 
 # Plot graph of portfolio while running? (BOOLEAN), must be either True of False
 PLOTPORTFOLIO = False
