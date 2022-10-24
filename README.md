@@ -3,7 +3,7 @@ An automated trader for crypto on Robinhood
 
 ## Donate to this project and help support open-sourced financial software (anything helps!)
 
-### I am happy to accept all tradable crypto currencies as gifts
+### I am happy to accept the following crypto currencies as gifts, it is much appreciated!
 - Bitcoin (BTC) wallet address: `bc1qvljdr72k3tz6w8k6hpnhv3722fmsgftkeeakx8`
 - Ethereum (ETH) wallet address: `0xDd5E232561177e5E48432F6BA4fD12173Bbe869A`
 - US Dollar Coin (USDC) wallet address: `0xDd5E232561177e5E48432F6BA4fD12173Bbe869A`
