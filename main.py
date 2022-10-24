@@ -414,7 +414,7 @@ if __name__ == "__main__":
                         if is_live:
                             print("LIVE: Buy order is going through")
     
-                            if len(order.Order().get_all_open_orders()) == 0:
+                            if len(order.get_all_open_orders()) == 0:
                                 print("No orders still in queue: new order will execute")
     
                                 # Limit order by price
@@ -460,7 +460,7 @@ if __name__ == "__main__":
                         
                         trade = "UNABLE TO BUY (NOT ENOUGH CASH)"
                         
-                        if config.MODE != 'BACTEST':
+                        if config.MODE != 'BACKTEST':
                             tr.buy_times[i][dt.datetime.now()] = 'unable_to_buy'
                         else:
                             tr.buy_times[i][tr.convert_timestamp_to_datetime(crypto_historicals[i][backtest_index]['begins_at'])] = 'unable_to_buy'
@@ -479,7 +479,7 @@ if __name__ == "__main__":
                         if is_live:
                             print("LIVE: Sell order is going through")
     
-                            if len(order.Order().get_all_open_orders()) == 0:
+                            if len(order.get_all_open_orders()) == 0:
                                 print("No orders still in queue: new order will execute")
     
                                 # Limit order by price for a set quantity
