@@ -19,6 +19,8 @@ An automated trader for crypto on Robinhood
 - Chainlink (LINK) wallet address: `0xDd5E232561177e5E48432F6BA4fD12173Bbe869A`
 - Bitcoin Cash (BCH) wallet address: `bitcoincash:qr4h4edxt5muv2ns3kls0d4ca8lezu8x9v9d4r227h`
 - Compound (COMP) wallet address: `0xDd5E232561177e5E48432F6BA4fD12173Bbe869A`
+- Aave (AAVE) wallet address: `0xDd5E232561177e5E48432F6BA4fD12173Bbe869A`
+- Tezos (XTZ) wallet address: `tz1Wexc9bv6BxCBgyXwaqmJq1RNYxXBr9aff`
 
 <!--
 - Stellar Lumens (XLM): `Currently unable to send and receive on Robinhood`
