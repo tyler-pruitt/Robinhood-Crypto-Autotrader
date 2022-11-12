@@ -21,9 +21,9 @@ An automated trader for crypto on Robinhood
 - Compound (COMP) wallet address: `0xDd5E232561177e5E48432F6BA4fD12173Bbe869A`
 - Aave (AAVE) wallet address: `0xDd5E232561177e5E48432F6BA4fD12173Bbe869A`
 - Tezos (XTZ) wallet address: `tz1Wexc9bv6BxCBgyXwaqmJq1RNYxXBr9aff`
+- Stellar Lumens (XLM): `GB2ES2N326MZK4EGJBKN3ZARCQ5RTFQSAWIJAAKFVIIIJSCC35TXIMLB`, memo (needs to be included): `1592369023`
 
 <!--
-- Stellar Lumens (XLM): `Currently unable to send and receive on Robinhood`
 - Bitcoin SV (BSV): `Currently unable to send and receive on Robinhood`
 -->
 
