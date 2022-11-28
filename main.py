@@ -264,6 +264,8 @@ def check_config():
     print("configuration test: PASSED")
 
 def run():
+    global is_live, stocks, crypto_historicals, initial_backtest_index, backtest_index, total_iteration_num, cash, equity, trade_dict, price_dict, df_trades, df_prices, holdings, bought_price, initial_capital, tr, orders, time_data, portfolio_data, iteration_num, average_iteration_runtime, cash_divisor, holdings_divisor
+    
     try:
         while tr.continue_trading():
             iteration_runtime_start = time.time()
@@ -600,11 +602,5 @@ if __name__ == "__main__":
         average_iteration_runtime = 0
 
     cash_divisor, holdings_divisor = 5, 5
-
-    if cash_divisor < len(stocks):
-        cash_divisor = len(stocks)
-
-    if holdings_divisor < len(stocks):
-        holdings_divisor = len(stocks)
         
     run()
