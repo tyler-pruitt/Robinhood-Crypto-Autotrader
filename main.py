@@ -263,81 +263,8 @@ def check_config():
     
     print("configuration test: PASSED")
 
-if __name__ == "__main__":
-    
-    check_config()
-    
-    login()
-    
+def run():
     try:
-        
-        if config.MODE == 'LIVE':
-            is_live = True
-        else:
-            is_live = False
-        
-        stocks = config.CRYPTO
-        
-        print('cryptos:', stocks, end='\n\n')
-        
-        if config.MODE == 'BACKTEST':
-            crypto_historicals = download_backtest_data(stocks)
-            
-            # Set initial_backtest_index to 33 (33 = macd_slow_period + macd_signal_period) for tr.determine_trade_macd_rsi()
-            # Set initial_backtest_index to 19 (19 = period + 1) for tr.determine_trade_boll()
-            
-            #initial_backtest_index = 33
-            initial_backtest_index = 19
-            
-            backtest_index = initial_backtest_index
-            
-            total_iteration_num = convert_time_to_sec(config.SPAN) // convert_time_to_sec(config.INTERVAL) - initial_backtest_index
-        
-        cash, equity = get_cash()
-    
-        trade_dict = {stocks[i]: 0 for i in range(0, len(stocks))}
-        price_dict = {stocks[i]: 0 for i in range(0, len(stocks))}
-        
-        df_trades = pd.DataFrame(columns=stocks)
-        df_prices = pd.DataFrame(columns=stocks)
-        
-        # Initialization of holdings and bought price (necessary to be here due to different modes and cash initializations)
-        holdings, bought_price = get_holdings_and_bought_price(stocks)
-        
-        # Initialization of initial_capital and cash (if necessary)
-        # This initialization needs to be here due to different modes and cash initializations
-        if config.USECASH == False or is_live:
-            
-            initial_capital = get_crypto_holdings_capital(holdings) + cash
-        else:
-            initial_capital = config.CASH
-            
-            # Initialize cash to config.CASH
-            cash = config.CASH
-        
-        assert initial_capital > 0
-        
-        tr = trader.Trader(stocks, initial_capital)
-        
-        if is_live:
-            orders = []
-        
-        if config.PLOTPORTFOLIO:
-            time_data, portfolio_data = [], []
-        
-        iteration_num = 1
-        
-        if config.MODE != 'BACKTEST':
-            average_iteration_runtime = 0
-        
-        cash_divisor, holdings_divisor = 5, 5
-        
-        if cash_divisor < len(stocks):
-            cash_divisor = len(stocks)
-        
-        if holdings_divisor < len(stocks):
-            holdings_divisor = len(stocks)
-        
         while tr.continue_trading():
             iteration_runtime_start = time.time()
             
@@ -498,10 +425,7 @@ if __name__ == "__main__":
                                 
                                 trade = "UNABLE TO SELL (ORDERS STILL IN QUEUE)"
                                 
-                                if config.MODE == 'SAFELIVE':
-                                    tr.sell_times[i][dt.datetime.now()] = 'unable_to_sell'
-                                else:
-                                    tr.sell_times[i][tr.convert_timestamp_to_datetime(crypto_historicals[i][backtest_index]['begins_at'])] = 'unable_to_sell'
+                                tr.sell_times[i][dt.datetime.now()] = 'unable_to_sell'
                             
                         else:
                             print(config.MODE + ": live sell order is not going through")
@@ -560,33 +484,127 @@ if __name__ == "__main__":
                 if wait_time < 0:
                     wait_time = 0
                 
-                print("Waiting " + str(round(wait_time, 2)) + ' seconds...')
-                
-                time.sleep(wait_time)
+                if wait_time > 0:
+                    print("Waiting " + str(round(wait_time, 2)) + ' seconds...')
+                    
+                    time.sleep(wait_time)
             else:
                 backtest_index += 1
             
             iteration_num += 1
         
-        logout()
-        
         if config.EXPORTCSV:
             rh.export.export_completed_crypto_orders('./', 'completed_crypto_orders')
+        
+        logout()
     
     except KeyboardInterrupt:
         print("User ended execution of program.")
         
-        logout()
-        
         if config.EXPORTCSV:
             rh.export.export_completed_crypto_orders('./', 'completed_crypto_orders')
+        
+        logout()
+        
+    except TypeError:
+        # Robinhood Internal Error
+        # 503 Server Error: Service Unavailable for url: https://api.robinhood.com/marketdata/forex/quotes/76637d50-c702-4ed1-bcb5-5b0732a81f48/
+        print("Robinhood Internal Error: TypeError: continuing trading")
+        
+        # Continue trading
+        run()
+        
+    except KeyError:
+        # Robinhood Internal Error
+        # 503 Service Error: Service Unavailable for url: https://api.robinhood.com/portfolios/
+        # 500 Server Error: Internal Server Error for url: https://api.robinhood.com/portfolios/
+        print("Robinhood Internal Error: KeyError: continuing trading")
+        
+        # Continue trading
+        run()
     
     except Exception:
         print("An error occured: stopping process")
         
-        logout()
-        
         if config.EXPORTCSV:
             rh.export.export_completed_crypto_orders('./', 'completed_crypto_orders')
         
+        logout()
+        
         print("Error message:", sys.exc_info())
+    return
+
+if __name__ == "__main__":
+    
+    check_config()
+    
+    login()
+    
+    if config.MODE == 'LIVE':
+        is_live = True
+    else:
+        is_live = False
+
+    stocks = config.CRYPTO
+
+    print('cryptos:', stocks, end='\n\n')
+
+    if config.MODE == 'BACKTEST':
+        crypto_historicals = download_backtest_data(stocks)
+
+        # Set initial_backtest_index to 33 (33 = macd_slow_period + macd_signal_period) for tr.determine_trade_macd_rsi()
+        # Set initial_backtest_index to 19 (19 = period + 1) for tr.determine_trade_boll()
+
+        #initial_backtest_index = 33
+        initial_backtest_index = 19
+
+        backtest_index = initial_backtest_index
+
+        total_iteration_num = convert_time_to_sec(config.SPAN) // convert_time_to_sec(config.INTERVAL) - initial_backtest_index
+
+    cash, equity = get_cash()
+
+    trade_dict = {stocks[i]: 0 for i in range(0, len(stocks))}
+    price_dict = {stocks[i]: 0 for i in range(0, len(stocks))}
+
+    df_trades = pd.DataFrame(columns=stocks)
+    df_prices = pd.DataFrame(columns=stocks)
+
+    # Initialization of holdings and bought price (necessary to be here due to different modes and cash initializations)
+    holdings, bought_price = get_holdings_and_bought_price(stocks)
+
+    # Initialization of initial_capital and cash (if necessary)
+    # This initialization needs to be here due to different modes and cash initializations
+    if config.USECASH == False or is_live:
+
+        initial_capital = get_crypto_holdings_capital(holdings) + cash
+    else:
+        initial_capital = config.CASH
+
+        # Initialize cash to config.CASH
+        cash = config.CASH
+
+    assert initial_capital > 0
+
+    tr = trader.Trader(stocks, initial_capital)
+
+    if is_live:
+        orders = []
+
+    if config.PLOTPORTFOLIO:
+        time_data, portfolio_data = [], []
+
+    iteration_num = 1
+
+    if config.MODE != 'BACKTEST':
+        average_iteration_runtime = 0
+
+    cash_divisor, holdings_divisor = 5, 5
+
+    if cash_divisor < len(stocks):
+        cash_divisor = len(stocks)
+
+    if holdings_divisor < len(stocks):
+        holdings_divisor = len(stocks)
+        
+    run()
